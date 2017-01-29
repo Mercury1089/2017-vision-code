@@ -1,11 +1,11 @@
 // Do not mess with the following 6 lines
 plugins {
+  id 'java'
+  id 'application'
+  id 'eclipse'
+  id 'idea'
   id 'com.github.johnrengelman.shadow' version '1.2.4'
 }
-
-apply plugin: 'java'
-apply plugin: 'application'
-
 
 // This is where you select which operating system to build for.
 
