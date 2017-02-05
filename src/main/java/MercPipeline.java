@@ -1,4 +1,3 @@
-package org.usfirst.frc.team1089.main;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;

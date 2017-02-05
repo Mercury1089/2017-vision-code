@@ -1,5 +1,3 @@
-package org.usfirst.frc.team1089.main;
-
 import edu.wpi.cscore.*;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.tables.ITable;
@@ -139,8 +137,13 @@ public class Main {
             }
         });
 
-        gearVisionThread.setDaemon(true);
         gearVisionThread.start();
+
+        try {
+            gearVisionThread.wait();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     // region Ignore
