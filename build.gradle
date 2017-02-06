@@ -4,19 +4,16 @@ plugins {
   id 'application'
   id 'eclipse'
   id 'idea'
+  id 'org.hidetake.ssh' version '2.7.2'
   id 'com.github.johnrengelman.shadow' version '1.2.4'
 }
 
 // This is where you select which operating system to build for.
+// Windows systems: "windows"
+// Raspberry Pi (Raspian): "arm-raspbian"
+// armhf (Jetson or Beaglebone Black): "armhf"
 
-// Uncomment the line below to build for windows
-//ext.buildType = "windows"
-
-// Uncomment the line below to build for a Raspberry Pi running raspbian
 ext.buildType = "arm-raspbian"
-
-// Uncomment the line below to build for an armhf device such as a Jetson or a Beaglebone Black
-//ext.buildType = "armhf"
 
 // Change the line below if you change the name of your main Java class
 mainClassName = 'Main'

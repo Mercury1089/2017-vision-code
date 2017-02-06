@@ -7,12 +7,17 @@ import org.opencv.imgproc.Imgproc;
 import java.util.ArrayList;
 
 public class Main {
-    public static void main(String[] args) {
-        // Initialize our pipeline
-        MercPipeline pipeline = new MercPipeline();
+    private static final int
+            FPS = 30,
+            RES_X = 320,
+            RES_Y = 240;
 
+    public static void main(String[] args) {
         // Loads our OpenCV library. This MUST be included
         System.loadLibrary("opencv_java310");
+
+        // Initialize our pipeline
+        MercPipeline pipeline = new MercPipeline();
 
         // Connect NetworkTables, and get access to the publishing table
         NetworkTable.setClientMode();
@@ -28,19 +33,132 @@ public class Main {
         Thread gearVisionThread = new Thread(() -> {
             NetworkTable gearVisionTable = NetworkTable.getTable(rootTable + "gearVision");
             // This stores our reference to our mjpeg server for streaming the input image
-            MjpegServer inputStream = new MjpegServer("MJPEG Server", 1185);
+            MjpegServer inputStream = new MjpegServer("MJPEG_Pi", 1185);
             // Using the pi camera feed for this thread.
             UsbCamera camera = setUsbCamera(0, inputStream);
 
             // This creates a CvSink for us to use. This grabs images from our selected camera,
             // and will allow us to use those images in opencv
-            CvSink imageSink = new CvSink("CV Image Grabber");
+            CvSink imageSink = new CvSink("CvSink_Pi");
             imageSink.setSource(camera);
 
             // This creates a CvSource to use. This will take in a Mat image that has had OpenCV operations
             // operations
-            CvSource imageSource = new CvSource("CV Image Source", VideoMode.PixelFormat.kMJPEG, 640, 480, 30);
-            MjpegServer cvStream = new MjpegServer("CV Image Stream", 1186);
+            CvSource imageSource = new CvSource("CvSource_Pi", VideoMode.PixelFormat.kMJPEG, RES_X, RES_Y, FPS);
+            MjpegServer cvStream = new MjpegServer("CvStream_Pi", 1186);
+            cvStream.setSource(imageSource);
+
+            // All Mats and Lists should be stored outside the loop to avoid allocations
+            // as they are expensive to create
+            Mat img = new Mat();
+
+            // Infinitely process image
+            while (!Thread.interrupted()) {
+                // Grab a frame. If it has a frame time of 0, there was an error.
+                // Just skip and continue
+                if (imageSink.grabFrame(img) == 0) {
+                    System.out.println(imageSink.getError());
+                    continue;
+                }
+
+                // Initialize variables for vision
+                double
+                        targetWidth = -1,
+                        targetHeight = -1;
+
+                double[] center = {-1, -1};
+
+                // Process frame under here
+                pipeline.process(img);
+                ArrayList<MatOfPoint> contours = pipeline.filterContoursOutput();
+
+                if (contours.size() == 2) {
+                    Rect target1, target2;
+
+                    if (Imgproc.boundingRect(contours.get(1)).x < Imgproc.boundingRect(contours.get(0)).x) {
+                        target1 = Imgproc.boundingRect(contours.get(1));
+                        target2 = Imgproc.boundingRect(contours.get(0));
+                    } else {
+                        target1 = Imgproc.boundingRect(contours.get(0));
+                        target2 = Imgproc.boundingRect(contours.get(1));
+                    }
+
+                    Scalar red = new Scalar(0, 0, 255);
+
+                    // Our targeting rect needs to encapsulate both vision targets
+                    Point topLeft = new Point(
+                            target1.x,
+                            target1.y < target2.y ? target1.y : target2.y
+                    );
+
+                    Point bottomRight = new Point(
+                            target2.x + target2.width,
+                            target1.y < target2.y ? target2.y + target2.height : target1.y + target1.height
+                    );
+
+                    targetWidth = bottomRight.x - topLeft.x;
+                    targetHeight = bottomRight.y - topLeft.y;
+
+                    // Get the center of the target and check if we are centered
+                    Point targetCenter = new Point(topLeft.x + targetWidth / 2, topLeft.y + targetHeight / 2);
+                    center[0] = targetCenter.x;
+                    center[1] = targetCenter.y;
+
+                    // Draw target
+                    Imgproc.rectangle(
+                            img,
+                            topLeft,
+                            bottomRight,
+                            red,
+                            3
+                    );
+
+                    Imgproc.line(
+                            img,
+                            new Point(targetCenter.x, targetCenter.y - 5),
+                            new Point(targetCenter.x, targetCenter.y + 5),
+                            red,
+                            3
+                    );
+
+                    Imgproc.line(
+                            img,
+                            new Point(targetCenter.x - 5, targetCenter.y),
+                            new Point(targetCenter.x + 5, targetCenter.y),
+                            red,
+                            3
+                    );
+                }
+
+                // Output some numbers to our network table
+                gearVisionTable.putNumber("targetWidth", targetWidth);
+                gearVisionTable.putNumber("targetHeight", targetHeight);
+                gearVisionTable.putNumberArray("center", center);
+
+                // Here is where you would write a processed image that you want to restream
+                // This will most likely be a marked up image of what the camera sees
+                // For now, we are just going to stream the HSV image
+                imageSource.putFrame(img);
+            }
+        });
+
+        // Create the thread that will process gear vision targets
+        Thread highGoalThread = new Thread(() -> {
+            NetworkTable highGoalTable = NetworkTable.getTable(rootTable + "highGoal");
+            // This stores our reference to our mjpeg server for streaming the input image
+            MjpegServer inputStream = new MjpegServer("MJPEG_LifeCam", 1187);
+            // Using the pi camera feed for this thread.
+            UsbCamera camera = setUsbCamera(1, inputStream);
+
+            // This creates a CvSink for us to use. This grabs images from our selected camera,
+            // and will allow us to use those images in opencv
+            CvSink imageSink = new CvSink("CvSink_LifeCam");
+            imageSink.setSource(camera);
+
+            // This creates a CvSource to use. This will take in a Mat image that has had OpenCV operations
+            // operations
+            CvSource imageSource = new CvSource("CvSource_LifeCam", VideoMode.PixelFormat.kMJPEG, RES_X, RES_Y, FPS);
+            MjpegServer cvStream = new MjpegServer("CvStream_LifeCam", 1188);
             cvStream.setSource(imageSource);
 
             // All Mats and Lists should be stored outside the loop to avoid allocations
@@ -141,7 +259,7 @@ public class Main {
 
         try {
             gearVisionThread.wait();
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
