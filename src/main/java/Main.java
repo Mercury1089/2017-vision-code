@@ -12,12 +12,11 @@ public class Main {
             RES_X = 320,
             RES_Y = 240;
 
+    private static Thread gearVisionThread, highGoalThread;
+
     public static void main(String[] args) {
         // Loads our OpenCV library. This MUST be included
         System.loadLibrary("opencv_java310");
-
-        // Initialize our pipeline
-        MercPipeline pipeline = new MercPipeline();
 
         // Connect NetworkTables, and get access to the publishing table
         NetworkTable.setClientMode();
@@ -30,12 +29,13 @@ public class Main {
         String rootTable = "Vision/";
 
         // Create the thread that will process gear vision targets
-        Thread gearVisionThread = new Thread(() -> {
+        gearVisionThread = new Thread(() -> {
             NetworkTable gearVisionTable = NetworkTable.getTable(rootTable + "gearVision");
             // This stores our reference to our mjpeg server for streaming the input image
             MjpegServer inputStream = new MjpegServer("MJPEG_Pi", 1185);
             // Using the pi camera feed for this thread.
             UsbCamera camera = setUsbCamera(0, inputStream);
+            camera.setResolution(RES_X, RES_Y);
 
             // This creates a CvSink for us to use. This grabs images from our selected camera,
             // and will allow us to use those images in opencv
@@ -52,6 +52,9 @@ public class Main {
             // as they are expensive to create
             Mat img = new Mat();
 
+            // Initialize our pipeline
+            MercPipeline pipeline = new MercPipeline();
+
             // Infinitely process image
             while (!Thread.interrupted()) {
                 // Grab a frame. If it has a frame time of 0, there was an error.
@@ -139,16 +142,18 @@ public class Main {
                 // This will most likely be a marked up image of what the camera sees
                 // For now, we are just going to stream the HSV image
                 imageSource.putFrame(img);
+                img.release();
             }
-        });
+        }, "Thread-GearVision");
 
         // Create the thread that will process gear vision targets
-        Thread highGoalThread = new Thread(() -> {
+        highGoalThread = new Thread(() -> {
             NetworkTable highGoalTable = NetworkTable.getTable(rootTable + "highGoal");
             // This stores our reference to our mjpeg server for streaming the input image
             MjpegServer inputStream = new MjpegServer("MJPEG_LifeCam", 1187);
-            // Using the pi camera feed for this thread.
+            // Using the LifeCam feed for this thread.
             UsbCamera camera = setUsbCamera(1, inputStream);
+            camera.setResolution(RES_X, RES_Y);
 
             // This creates a CvSink for us to use. This grabs images from our selected camera,
             // and will allow us to use those images in opencv
@@ -165,6 +170,9 @@ public class Main {
             // as they are expensive to create
             Mat img = new Mat();
 
+            // Initialize our pipeline
+            MercPipeline pipeline = new MercPipeline();
+
             // Infinitely process image
             while (!Thread.interrupted()) {
                 // Grab a frame. If it has a frame time of 0, there was an error.
@@ -244,23 +252,35 @@ public class Main {
                 }
 
                 // Output some numbers to our network table
-                gearVisionTable.putNumber("targetWidth", targetWidth);
-                gearVisionTable.putNumber("targetHeight", targetHeight);
-                gearVisionTable.putNumberArray("center", center);
+                highGoalTable.putNumber("targetWidth", targetWidth);
+                highGoalTable.putNumber("targetHeight", targetHeight);
+                highGoalTable.putNumberArray("center", center);
 
                 // Here is where you would write a processed image that you want to restream
                 // This will most likely be a marked up image of what the camera sees
                 // For now, we are just going to stream the HSV image
                 imageSource.putFrame(img);
+                img.release();
             }
-        });
+        }, "Thread-HighGoal");
 
         gearVisionThread.start();
+        highGoalThread.start();
 
-        try {
-            gearVisionThread.wait();
-        } catch (Exception e) {
-            e.printStackTrace();
+        synchronized (gearVisionThread) {
+            try {
+                gearVisionThread.wait();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        synchronized (highGoalThread) {
+            try {
+                highGoalThread.wait();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
