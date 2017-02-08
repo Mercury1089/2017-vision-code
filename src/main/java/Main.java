@@ -14,6 +14,8 @@ public class Main {
 
     private static Thread gearVisionThread, highGoalThread;
 
+    private static final Object LOCK = new Object();
+
     public static void main(String[] args) {
         // Loads our OpenCV library. This MUST be included
         System.loadLibrary("opencv_java310");
@@ -264,23 +266,13 @@ public class Main {
             }
         }, "Thread-HighGoal");
 
+        // Start up both threads
         gearVisionThread.start();
         highGoalThread.start();
 
-        synchronized (gearVisionThread) {
-            try {
-                gearVisionThread.wait();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        synchronized (highGoalThread) {
-            try {
-                highGoalThread.wait();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        synchronized (LOCK) {
+            while (!Thread.interrupted())
+                MercPipeline.updateHSLThreshold();
         }
     }
 

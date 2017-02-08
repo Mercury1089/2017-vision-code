@@ -1,18 +1,10 @@
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.HashMap;
-
+import edu.wpi.first.wpilibj.networktables.NetworkTable;
 import org.opencv.core.*;
-import org.opencv.core.Core.*;
-import org.opencv.features2d.FeatureDetector;
-import org.opencv.imgcodecs.Imgcodecs;
-import org.opencv.imgproc.*;
-import org.opencv.objdetect.*;
+import org.opencv.imgproc.Imgproc;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
 * MercPipeline class.
@@ -27,6 +19,25 @@ public class MercPipeline {
 	private Mat hslThresholdOutput = new Mat();
 	private ArrayList<MatOfPoint> findContoursOutput = new ArrayList<MatOfPoint>();
 	private ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<MatOfPoint>();
+	private static final double[]
+		HSL_THRESHOLD_HUE = {69.60429759580393, 94.94890927847149},
+		HSL_THRESHOLD_SAT = {0.0, 255.0},
+		HSL_THRESHOLD_LUM = {87.14028776978417, 255.0};
+
+
+	public static void updateHSLThreshold() {
+		// Update hue theshold
+		HSL_THRESHOLD_HUE[0] = NetworkTable.getTable("Vision").getNumber("hslThresholdHueMin", 69.60429759580393);
+		HSL_THRESHOLD_HUE[1] = NetworkTable.getTable("Vision").getNumber("hslThresholdHueMax", 94.94890927847149);
+
+		// Update saturation threshold
+		HSL_THRESHOLD_SAT[0] = NetworkTable.getTable("Vision").getNumber("hslThresholdSaturationMin", 0.0);
+		HSL_THRESHOLD_SAT[1] = NetworkTable.getTable("Vision").getNumber("hslThresholdSaturationMax", 255.0);
+
+		// Update luminance threshold
+		HSL_THRESHOLD_LUM[0] = NetworkTable.getTable("Vision").getNumber("hslThresholdLuminanceMin", 87.14028776978417);
+		HSL_THRESHOLD_LUM[1] = NetworkTable.getTable("Vision").getNumber("hslThresholdLuminanceMax", 255.0);
+	}
 
 	/**
 	 * This is the primary method that runs the entire pipeline and updates the outputs.
@@ -34,10 +45,8 @@ public class MercPipeline {
 	public void process(Mat source0) {
 		// Step HSL_Threshold0:
 		Mat hslThresholdInput = source0;
-		double[] hslThresholdHue = {69.60429759580393, 94.94890927847149};
-		double[] hslThresholdSaturation = {0.0, 255.0};
-		double[] hslThresholdLuminance = {87.14028776978417, 255.0};
-		hslThreshold(hslThresholdInput, hslThresholdHue, hslThresholdSaturation, hslThresholdLuminance, hslThresholdOutput);
+
+		hslThreshold(hslThresholdInput, HSL_THRESHOLD_HUE, HSL_THRESHOLD_SAT, HSL_THRESHOLD_LUM, hslThresholdOutput);
 
 		// Step Find_Contours0:
 		Mat findContoursInput = hslThresholdOutput;
