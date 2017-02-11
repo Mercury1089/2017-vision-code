@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj.tables.ITable;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Main {
@@ -16,9 +17,43 @@ public class Main {
 
     private static final Object LOCK = new Object();
 
-    public static void main(String[] args) {
-        // Loads our OpenCV library. This MUST be included
+    static {
+        // Loads our OpenCV library before anything else.
         System.loadLibrary("opencv_java310");
+    }
+
+    public static void main(String[] args) {
+        // The root key for both vision targets
+        String rootTable = "Vision/";
+
+        // The network tables to use for targeting
+        NetworkTable
+            gearVisionTable = NetworkTable.getTable(rootTable + "gearVision"),
+            highGoalTable = NetworkTable.getTable(rootTable + "highGoal");
+
+        // All the Mjpeg servers to check out before and after of each feed
+        // They can be found at http://roborio-1089-FRC.local:<port>
+        MjpegServer
+            piRawStream = new MjpegServer("RAW_Pi", 1185),
+            piOutputStream = new MjpegServer("OUTPUT_Pi", 1186),
+            lifeCamRawStream = new MjpegServer("RAW_LifeCam", 1187),
+            lifeCamOutputStream = new MjpegServer("OUTPUT_LifeCam", 1188);
+
+        // CvSources to take in mats with operations
+        CvSource
+            piSource = new CvSource("CvSource_Pi", VideoMode.PixelFormat.kMJPEG, RES_X, RES_Y, FPS),
+            lifeCamSource = new CvSource("CvSource_LifeCam", VideoMode.PixelFormat.kMJPEG, RES_X, RES_Y, FPS);
+
+        // Our usb cameras
+        // NOTE: will not always be right; check video settings on pi
+        UsbCamera
+            piCamera = setUsbCamera("Pi Camera", 0, piRawStream),
+            lifeCam = setUsbCamera("LifeCam 3000", 1, lifeCamRawStream);
+
+        // Sinks to get image feed to use for cv processing
+        CvSink
+            piSink = new CvSink("CvSink_Pi"),
+            lifeCamSink = new CvSink("CvSink_LifeCam");
 
         // Connect NetworkTables, and get access to the publishing table
         NetworkTable.setClientMode();
@@ -27,29 +62,20 @@ public class Main {
         // Initialize the network tables since we aren't doing this in a regular robot class
         NetworkTable.initialize();
 
-        // The root key for both vision targets
-        String rootTable = "Vision/";
+        // Change resolutions to cameras to be consistent.
+        piCamera.setResolution(RES_X, RES_Y);
+        lifeCam.setResolution(RES_X, RES_Y);
+
+        // Set sources of image sinks to get feeds from cameras
+        piSink.setSource(piCamera);
+        lifeCamSink.setSource(lifeCam);
+
+        // Set sources of Mjpeg outputs to take in processed images
+        piOutputStream.setSource(piSource);
+        lifeCamOutputStream.setSource(lifeCamSource);
 
         // Create the thread that will process gear vision targets
         gearVisionThread = new Thread(() -> {
-            NetworkTable gearVisionTable = NetworkTable.getTable(rootTable + "gearVision");
-            // This stores our reference to our mjpeg server for streaming the input image
-            MjpegServer inputStream = new MjpegServer("MJPEG_Pi", 1185);
-            // Using the pi camera feed for this thread.
-            UsbCamera camera = setUsbCamera(0, inputStream);
-            camera.setResolution(RES_X, RES_Y);
-
-            // This creates a CvSink for us to use. This grabs images from our selected camera,
-            // and will allow us to use those images in opencv
-            CvSink imageSink = new CvSink("CvSink_Pi");
-            imageSink.setSource(camera);
-
-            // This creates a CvSource to use. This will take in a Mat image that has had OpenCV operations
-            // operations
-            CvSource imageSource = new CvSource("CvSource_Pi", VideoMode.PixelFormat.kMJPEG, RES_X, RES_Y, FPS);
-            MjpegServer cvStream = new MjpegServer("CvStream_Pi", 1186);
-            cvStream.setSource(imageSource);
-
             // All Mats and Lists should be stored outside the loop to avoid allocations
             // as they are expensive to create
             Mat img = new Mat();
@@ -61,8 +87,8 @@ public class Main {
             while (!Thread.interrupted()) {
                 // Grab a frame. If it has a frame time of 0, there was an error.
                 // Just skip and continue
-                if (imageSink.grabFrame(img) == 0) {
-                    System.out.println(imageSink.getError());
+                if (piSink.grabFrame(img) == 0) {
+                    System.out.println(piSink.getError());
                     continue;
                 }
 
@@ -143,31 +169,13 @@ public class Main {
                 // Here is where you would write a processed image that you want to restream
                 // This will most likely be a marked up image of what the camera sees
                 // For now, we are just going to stream the HSV image
-                imageSource.putFrame(img);
+                piSource.putFrame(img);
                 img.release();
             }
         }, "Thread-GearVision");
 
         // Create the thread that will process gear vision targets
         highGoalThread = new Thread(() -> {
-            NetworkTable highGoalTable = NetworkTable.getTable(rootTable + "highGoal");
-            // This stores our reference to our mjpeg server for streaming the input image
-            MjpegServer inputStream = new MjpegServer("MJPEG_LifeCam", 1187);
-            // Using the LifeCam feed for this thread.
-            UsbCamera camera = setUsbCamera(1, inputStream);
-            camera.setResolution(RES_X, RES_Y);
-
-            // This creates a CvSink for us to use. This grabs images from our selected camera,
-            // and will allow us to use those images in opencv
-            CvSink imageSink = new CvSink("CvSink_LifeCam");
-            imageSink.setSource(camera);
-
-            // This creates a CvSource to use. This will take in a Mat image that has had OpenCV operations
-            // operations
-            CvSource imageSource = new CvSource("CvSource_LifeCam", VideoMode.PixelFormat.kMJPEG, RES_X, RES_Y, FPS);
-            MjpegServer cvStream = new MjpegServer("CvStream_LifeCam", 1188);
-            cvStream.setSource(imageSource);
-
             // All Mats and Lists should be stored outside the loop to avoid allocations
             // as they are expensive to create
             Mat img = new Mat();
@@ -179,8 +187,8 @@ public class Main {
             while (!Thread.interrupted()) {
                 // Grab a frame. If it has a frame time of 0, there was an error.
                 // Just skip and continue
-                if (imageSink.grabFrame(img) == 0) {
-                    System.out.println(imageSink.getError());
+                if (lifeCamSink.grabFrame(img) == 0) {
+                    System.out.println(lifeCamSink.getError());
                     continue;
                 }
 
@@ -261,7 +269,7 @@ public class Main {
                 // Here is where you would write a processed image that you want to restream
                 // This will most likely be a marked up image of what the camera sees
                 // For now, we are just going to stream the HSV image
-                imageSource.putFrame(img);
+                lifeCamSource.putFrame(img);
                 img.release();
             }
         }, "Thread-HighGoal");
@@ -270,9 +278,47 @@ public class Main {
         gearVisionThread.start();
         highGoalThread.start();
 
-        synchronized (LOCK) {
-            while (!Thread.interrupted())
+        try {
+            // Put wait methods into a loop to keep the threads from being interrupted
+            // when we don't want them to be.
+            while(NetworkTable.getTable(rootTable).getBoolean("shutdown", false)) {
+                synchronized (gearVisionThread) {
+                    gearVisionThread.wait((long)1000);
+                }
+
+                synchronized (highGoalThread) {
+                    highGoalThread.wait((long)1000);
+                }
+
                 MercPipeline.updateHSLThreshold();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            System.out.println("Shutting down...");
+
+            // Free resources
+            // NOTE: I don't actually know if this works
+            piSource.free();
+            piSink.free();
+            piRawStream.free();
+            piOutputStream.free();
+            piCamera.free();
+
+            lifeCamSource.free();
+            lifeCamSink.free();
+            lifeCamRawStream.free();
+            lifeCamOutputStream.free();
+            lifeCam.free();
+
+            // Run a shutdown command and give a 3-second grace period just in case.
+            try {
+                Runtime.getRuntime().exec("sudo shutdown -t 3");
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                System.exit(0);
+            }
         }
     }
 
@@ -323,15 +369,17 @@ public class Main {
     /**
      * Sets up a USB camera to get an image feed from.
      *
+     *
+     * @param name the name to give this {@link UsbCamera}
      * @param cameraId The device id of the camera
      * @param server The {@link MjpegServer} to send the feed to
      * @return the instance of the camera
      */
-    private static UsbCamera setUsbCamera(int cameraId, MjpegServer server) {
+    private static UsbCamera setUsbCamera(String name, int cameraId, MjpegServer server) {
         // This gets the image from a USB camera
         // Usually this will be on device 0, but there are other overloads
         // that can be used
-        UsbCamera camera = new UsbCamera("CoprocessorCamera", cameraId);
+        UsbCamera camera = new UsbCamera(name, cameraId);
         server.setSource(camera);
         return camera;
     }
