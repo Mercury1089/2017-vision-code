@@ -24,15 +24,18 @@ public class Main {
 
     public static void main(String[] args) {
         // The root key for both vision targets
-        String rootTable = "Vision/";
+        String rootTable = "Vision";
 
         // Connect NetworkTables, and get access to the publishing table
         NetworkTable.setClientMode();
-
+        // Set your team number here
+        NetworkTable.setTeam(1089);
+        // Initialize the network tables since we aren't doing this in a regular robot class
+        NetworkTable.initialize();
         // The network tables to use for targeting
         NetworkTable
-            gearVisionTable = NetworkTable.getTable(rootTable + "gearVision"),
-            highGoalTable = NetworkTable.getTable(rootTable + "highGoal");
+            gearVisionTable = NetworkTable.getTable(rootTable + "/gearVision"),
+            highGoalTable = NetworkTable.getTable(rootTable + "/highGoal");
 
         // All the Mjpeg servers to check out before and after of each feed
         // They can be found at http://roborio-1089-FRC.local:<port>
@@ -57,11 +60,6 @@ public class Main {
         CvSink
             piSink = new CvSink("CvSink_Pi"),
             lifeCamSink = new CvSink("CvSink_LifeCam");
-
-        // Set your team number here
-        NetworkTable.setTeam(1089);
-        // Initialize the network tables since we aren't doing this in a regular robot class
-        NetworkTable.initialize();
 
         // Change resolutions to cameras to be consistent.
         piCamera.setResolution(RES_X, RES_Y);
@@ -280,17 +278,11 @@ public class Main {
         highGoalThread.start();
 
         try {
-            // Put wait methods into a loop to keep the threads from being interrupted
-            // when we don't want them to be.
-            while(NetworkTable.getTable(rootTable).getBoolean("shutdown", false)) {
-                synchronized (gearVisionThread) {
-                    gearVisionThread.wait((long)1000);
-                }
-
-                synchronized (highGoalThread) {
-                    highGoalThread.wait((long)1000);
-                }
-
+        	// Ensure the shutdown flag is not already true (so we don't just shutdown...)
+        	NetworkTable.getTable(rootTable).putBoolean("shutdown", false);
+            while(!NetworkTable.getTable(rootTable).getBoolean("shutdown", false)) {
+            	System.out.println("getBoolean(shutdown):" + NetworkTable.getTable(rootTable).getBoolean("shutdown", false));
+            	Thread.sleep(1000);
                 MercPipeline.updateHSLThreshold();
             }
         } catch (Exception e) {
@@ -298,6 +290,13 @@ public class Main {
         } finally {
             System.out.println("Shutting down...");
 
+            // Set the interrupt to end each thread, which will end their while loop
+            gearVisionThread.interrupt();
+            highGoalThread.interrupt();
+            
+            // Wait until the threads die...
+            while(gearVisionThread.isAlive() && highGoalThread.isAlive() );
+            
             // Free resources
             // NOTE: I don't actually know if this works
             piSource.free();
