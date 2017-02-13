@@ -9,6 +9,7 @@ workbench.xmi
 *.ipr
 *.iml
 *.iws
+output/
 out/
 tmp/
 .settings/
