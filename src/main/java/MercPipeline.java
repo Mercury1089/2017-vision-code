@@ -1,9 +1,7 @@
-import edu.wpi.first.wpilibj.networktables.NetworkTable;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,18 +23,29 @@ public class MercPipeline {
 		HSL_THRESHOLD_LUM = {87.14028776978417, 255.0};
 
 
-	public static void updateHSLThreshold() {
-		// Update hue theshold
-		HSL_THRESHOLD_HUE[0] = NetworkTable.getTable("Vision").getNumber("hslThresholdHueMin", 69.60429759580393);
-		HSL_THRESHOLD_HUE[1] = NetworkTable.getTable("Vision").getNumber("hslThresholdHueMax", 94.94890927847149);
-
-		// Update saturation threshold
-		HSL_THRESHOLD_SAT[0] = NetworkTable.getTable("Vision").getNumber("hslThresholdSaturationMin", 0.0);
-		HSL_THRESHOLD_SAT[1] = NetworkTable.getTable("Vision").getNumber("hslThresholdSaturationMax", 255.0);
-
-		// Update luminance threshold
-		HSL_THRESHOLD_LUM[0] = NetworkTable.getTable("Vision").getNumber("hslThresholdLuminanceMin", 87.14028776978417);
-		HSL_THRESHOLD_LUM[1] = NetworkTable.getTable("Vision").getNumber("hslThresholdLuminanceMax", 255.0);
+	public static void updateHSLThreshold(String var, double val) {
+		switch(var) {
+			case "hueMin":
+				HSL_THRESHOLD_HUE[0] = val;
+				break;
+			case "hueMax":
+				HSL_THRESHOLD_HUE[1] = val;
+				break;
+			case "satMin":
+				HSL_THRESHOLD_SAT[0] = val;
+				break;
+			case "satMax":
+				HSL_THRESHOLD_SAT[1] = val;
+				break;
+			case "lumMin":
+				HSL_THRESHOLD_LUM[0] = val;
+				break;
+			case "lumMax":
+				HSL_THRESHOLD_LUM[1] = val;
+				break;
+			default:
+				throw new IllegalArgumentException("Not a valid key for the HSL threshold");
+		}
 	}
 
 	/**
@@ -55,7 +64,7 @@ public class MercPipeline {
 
 		// Step Filter_Contours0:
 		ArrayList<MatOfPoint> filterContoursContours = findContoursOutput;
-		double filterContoursMinArea = 20.0;
+		double filterContoursMinArea = 100.0;
 		double filterContoursMinPerimeter = 0;
 		double filterContoursMinWidth = 0;
 		double filterContoursMaxWidth = 1000;
@@ -114,9 +123,8 @@ public class MercPipeline {
 	/**
 	 * Sets the values of pixels in a binary image to their distance to the nearest black pixel.
 	 * @param input The image on which to perform the Distance Transform.
-	 * @param type The Transform.
-	 * @param maskSize the size of the mask.
-	 * @param output The image in which to store the output.
+	 * @param externalOnly
+	 * @param contours the {@link List} to store the contours in.
 	 */
 	private void findContours(Mat input, boolean externalOnly,
 		List<MatOfPoint> contours) {
@@ -144,7 +152,7 @@ public class MercPipeline {
 	 * @param maxWidth maximum width
 	 * @param minHeight minimum height
 	 * @param maxHeight maximimum height
-	 * @param Solidity the minimum and maximum solidity of a contour
+	 * @param solidity the minimum and maximum solidity of a contour
 	 * @param minVertexCount minimum vertex Count of the contours
 	 * @param maxVertexCount maximum vertex Count
 	 * @param minRatio minimum ratio of width to height
