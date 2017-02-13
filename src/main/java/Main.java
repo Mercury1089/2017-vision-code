@@ -17,8 +17,6 @@ public class Main {
 
     private static final Object LOCK = new Object();
 
-    private static boolean shutdown = false;
-
     static {
         // Loads our OpenCV library before anything else.
         System.loadLibrary("opencv_java310");
@@ -26,7 +24,7 @@ public class Main {
 
     public static void main(String[] args) {
         // The root key for both vision targets
-        String rootTable = "Vision/";
+        String rootTable = "Vision";
 
         // Connect NetworkTables, and get access to the publishing table
         NetworkTable.setClientMode();
@@ -37,8 +35,8 @@ public class Main {
 
         // The network tables to use for targeting
         NetworkTable
-                gearVisionTable = NetworkTable.getTable(rootTable + "gearVision"),
-                highGoalTable = NetworkTable.getTable(rootTable + "highGoal");
+            gearVisionTable = NetworkTable.getTable(rootTable + "/gearVision"),
+            highGoalTable = NetworkTable.getTable(rootTable + "/highGoal");
 
         // ITableListener to update values for SmartDashboard
         NetworkTable.getTable(rootTable + "hslThreshold").addTableListener((ITable source, String key, Object value, boolean isNew) -> {
@@ -324,18 +322,18 @@ public class Main {
         try {
             // Put wait methods into a loop to keep the threads from being interrupted
             // when we don't want them to be.
-            while(!shutdown) {
-                synchronized (gearVisionThread) {
-                    gearVisionThread.wait();
-                }
-
-                synchronized (highGoalThread) {
-                    highGoalThread.wait();
-                }
-            }
+            NetworkTable.getTable(rootTable).putBoolean("shutdown", false);
+            while(!NetworkTable.getTable(rootTable).getBoolean("shutdown", false));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
+            // Set the interrupt to end each thread, which will end their while loop
+            gearVisionThread.interrupt();
+            highGoalThread.interrupt();
+
+            // Wait until the threads die...
+            while (gearVisionThread.isAlive() && highGoalThread.isAlive() );
+
             System.exit(0);
         }
     }

@@ -72,10 +72,14 @@ distributions {
 
 def outputDirectory = file("${rootDir}/output")
 
-task deploy << {
-  ssh.run {
-    session(remotes.pi) {
-      put from: outputDirectory, into: '/home/pi'
+task deploy {
+  dependsOn build
+  group = 'build'
+  doLast {
+    ssh.run {
+      session(remotes.pi) {
+        put from: outputDirectory, into: '/home/pi'
+      }
     }
   }
 }
