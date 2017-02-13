@@ -281,7 +281,6 @@ public class Main {
         	// Ensure the shutdown flag is not already true (so we don't just shutdown...)
         	NetworkTable.getTable(rootTable).putBoolean("shutdown", false);
             while(!NetworkTable.getTable(rootTable).getBoolean("shutdown", false)) {
-            	System.out.println("getBoolean(shutdown):" + NetworkTable.getTable(rootTable).getBoolean("shutdown", false));
             	Thread.sleep(1000);
                 MercPipeline.updateHSLThreshold();
             }
