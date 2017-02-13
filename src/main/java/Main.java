@@ -26,6 +26,9 @@ public class Main {
         // The root key for both vision targets
         String rootTable = "Vision/";
 
+        // Connect NetworkTables, and get access to the publishing table
+        NetworkTable.setClientMode();
+
         // The network tables to use for targeting
         NetworkTable
             gearVisionTable = NetworkTable.getTable(rootTable + "gearVision"),
@@ -55,8 +58,6 @@ public class Main {
             piSink = new CvSink("CvSink_Pi"),
             lifeCamSink = new CvSink("CvSink_LifeCam");
 
-        // Connect NetworkTables, and get access to the publishing table
-        NetworkTable.setClientMode();
         // Set your team number here
         NetworkTable.setTeam(1089);
         // Initialize the network tables since we aren't doing this in a regular robot class

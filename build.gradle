@@ -73,6 +73,7 @@ distributions {
 def outputDirectory = file("${rootDir}/output")
 
 task deploy {
+  dependsOn build
   group = 'build'
   doLast {
     ssh.run {
