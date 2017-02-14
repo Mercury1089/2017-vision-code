@@ -17,6 +17,8 @@ public class Main {
 
     private static final Object LOCK = new Object();
 
+    private static boolean shutdown = false;
+
     static {
         // Loads our OpenCV library before anything else.
         System.loadLibrary("opencv_java310");
@@ -173,7 +175,7 @@ public class Main {
                 highGoalTable.putNumber("targetHeight", targetHeight);
                 highGoalTable.putNumberArray("center", center);
                 highGoalTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
-                highGoalTable.putValue("publishTime", Calendar.getInstance().getTime());
+                highGoalTable.putString("publishTime", Calendar.getInstance().getTime().toString());
 
                 // Here is where you would write a processed image that you want to restream
                 // This will most likely be a marked up image of what the camera sees
@@ -277,7 +279,7 @@ public class Main {
                 highGoalTable.putNumber("targetHeight", targetHeight);
                 highGoalTable.putNumberArray("center", center);
                 highGoalTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
-                highGoalTable.putValue("publishTime", Calendar.getInstance().getTime());
+                highGoalTable.putString("publishTime", Calendar.getInstance().getTime().toString());
 
                 // Here is where you would write a processed image that you want to restream
                 // This will most likely be a marked up image of what the camera sees
@@ -323,17 +325,14 @@ public class Main {
             // Put wait methods into a loop to keep the threads from being interrupted
             // when we don't want them to be.
             NetworkTable.getTable(rootTable).putBoolean("shutdown", false);
-            while(!NetworkTable.getTable(rootTable).getBoolean("shutdown", false));
+            while(!shutdown) {
+                Thread.sleep(1000);
+                shutdown = NetworkTable.getTable(rootTable).getBoolean("shutdown", false);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            // Set the interrupt to end each thread, which will end their while loop
-            gearVisionThread.interrupt();
-            highGoalThread.interrupt();
-
-            // Wait until the threads die...
-            while (gearVisionThread.isAlive() && highGoalThread.isAlive() );
-
+            // Exit the program; this will start the shutdown hook.
             System.exit(0);
         }
     }
