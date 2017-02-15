@@ -41,9 +41,9 @@ public class Main {
             highGoalTable = NetworkTable.getTable(rootTable + "/highGoal");
 
         // ITableListener to update values for SmartDashboard
-        NetworkTable.getTable(rootTable + "hslThreshold").addTableListener((ITable source, String key, Object value, boolean isNew) -> {
-            MercPipeline.updateHSLThreshold(key, (Double)value);
-        });
+        NetworkTable.getTable(rootTable + "/hslThreshold").addTableListener((ITable source, String key, Object value, boolean isNew) ->
+            MercPipeline.updateHSLThreshold(key, (Double)value)
+        );
 
         // All the Mjpeg servers to check out before and after of each feed
         // They can be found at http://roborio-1089-FRC.local:<port>
@@ -61,17 +61,25 @@ public class Main {
         // Our usb cameras
         // NOTE: will not always be right; check video settings on pi
         UsbCamera
-            piCamera = setUsbCamera("Pi Camera", 0, piRawStream),
-            lifeCam = setUsbCamera("LifeCam 3000", 1, lifeCamRawStream);
+            piCamera = setUsbCamera("Pi Camera", 1, piRawStream),
+            lifeCam = setUsbCamera("LifeCam 3000", 0, lifeCamRawStream);
 
         // Sinks to get image feed to use for cv processing
         CvSink
             piSink = new CvSink("CvSink_Pi"),
             lifeCamSink = new CvSink("CvSink_LifeCam");
 
-        // Change resolutions to cameras to be consistent.
+        // Change resolutions and framerates of cameras to be consistent.
         piCamera.setResolution(RES_X, RES_Y);
+        piCamera.setFPS(FPS);
+        piCamera.setBrightness(0);
+        piCamera.getProperty("auto_exposure").set(1);
+        piCamera.getProperty("exposure_time_absolute").set(1);
+
         lifeCam.setResolution(RES_X, RES_Y);
+        lifeCam.setFPS(FPS);
+        lifeCam.setExposureManual(0);
+        lifeCam.setBrightness(0);
 
         // Set sources of image sinks to get feeds from cameras
         piSink.setSource(piCamera);
@@ -275,11 +283,11 @@ public class Main {
                 }
 
                 // Output some numbers to our network table
-                highGoalTable.putNumber("targetWidth", targetWidth);
-                highGoalTable.putNumber("targetHeight", targetHeight);
-                highGoalTable.putNumberArray("center", center);
-                highGoalTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
-                highGoalTable.putString("publishTime", Calendar.getInstance().getTime().toString());
+                gearVisionTable.putNumber("targetWidth", targetWidth);
+                gearVisionTable.putNumber("targetHeight", targetHeight);
+                gearVisionTable.putNumberArray("center", center);
+                gearVisionTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
+                gearVisionTable.putString("publishTime", Calendar.getInstance().getTime().toString());
 
                 // Here is where you would write a processed image that you want to restream
                 // This will most likely be a marked up image of what the camera sees
