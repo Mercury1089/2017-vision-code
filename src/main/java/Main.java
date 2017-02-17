@@ -4,10 +4,12 @@ import edu.wpi.first.wpilibj.tables.ITable;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 
 public class Main {
+    private static final Runtime RUNTIME;
     private static final int
             FPS = 15,
             RES_X = 320,
@@ -20,9 +22,18 @@ public class Main {
     static {
         // Loads our OpenCV library before anything else.
         System.loadLibrary("opencv_java310");
+
+        RUNTIME = Runtime.getRuntime();
     }
 
     public static void main(String[] args) {
+        // Probe for camera module driver
+        try {
+            RUNTIME.exec("sudo modprobe bcm2835-v4l2");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         // The root key for both vision targets
         String rootTable = "Vision";
 
@@ -183,11 +194,11 @@ public class Main {
                 }
 
                 // Output some numbers to our network table
-                highGoalTable.putNumber("targetWidth", targetWidth);
-                highGoalTable.putNumber("targetHeight", targetHeight);
-                highGoalTable.putNumberArray("center", center);
-                highGoalTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
-                highGoalTable.putString("publishTime", Calendar.getInstance().getTime().toString());
+                gearVisionTable.putNumber("targetWidth", targetWidth);
+                gearVisionTable.putNumber("targetHeight", targetHeight);
+                gearVisionTable.putNumberArray("center", center);
+                gearVisionTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
+                gearVisionTable.putString("publishTime", Calendar.getInstance().getTime().toString());
 
                 // Here is where you would write a processed image that you want to restream
                 // This will most likely be a marked up image of what the camera sees
@@ -284,11 +295,11 @@ public class Main {
                 }
 
                 // Output some numbers to our network table
-                gearVisionTable.putNumber("targetWidth", targetWidth);
-                gearVisionTable.putNumber("targetHeight", targetHeight);
-                gearVisionTable.putNumberArray("center", center);
-                gearVisionTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
-                gearVisionTable.putString("publishTime", Calendar.getInstance().getTime().toString());
+                highGoalTable.putNumber("targetWidth", targetWidth);
+                highGoalTable.putNumber("targetHeight", targetHeight);
+                highGoalTable.putNumberArray("center", center);
+                highGoalTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
+                highGoalTable.putString("publishTime", Calendar.getInstance().getTime().toString());
 
                 // Here is where you would write a processed image that you want to restream
                 // This will most likely be a marked up image of what the camera sees
@@ -298,7 +309,7 @@ public class Main {
             }
         }, "Thread-HighGoal");
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        RUNTIME.addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down...");
 
             // Free resources
@@ -320,7 +331,7 @@ public class Main {
 
             // Run a shutdown command.
             try {
-                Runtime.getRuntime().exec("sudo shutdown -t 5");
+                RUNTIME.exec("sudo shutdown -t 5");
             } catch (Exception e) {
                 e.printStackTrace();
             }
