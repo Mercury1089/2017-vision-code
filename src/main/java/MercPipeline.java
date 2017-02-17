@@ -76,7 +76,6 @@ public class MercPipeline {
 		double filterContoursMinRatio = 0;
 		double filterContoursMaxRatio = 1000;
 		filterContours(filterContoursContours, filterContoursMinArea, filterContoursMinPerimeter, filterContoursMinWidth, filterContoursMaxWidth, filterContoursMinHeight, filterContoursMaxHeight, filterContoursSolidity, filterContoursMaxVertices, filterContoursMinVertices, filterContoursMinRatio, filterContoursMaxRatio, filterContoursOutput);
-
 	}
 
 	/**
@@ -102,7 +101,6 @@ public class MercPipeline {
 	public ArrayList<MatOfPoint> filterContoursOutput() {
 		return filterContoursOutput;
 	}
-
 
 	/**
 	 * Segment an image based on hue, saturation, and luminance ranges.

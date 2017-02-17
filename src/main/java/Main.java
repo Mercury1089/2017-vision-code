@@ -15,8 +15,6 @@ public class Main {
 
     private static Thread gearVisionThread, highGoalThread;
 
-    private static final Object LOCK = new Object();
-
     private static boolean shutdown = false;
 
     static {
@@ -61,18 +59,23 @@ public class Main {
         // Our usb cameras
         // NOTE: will not always be right; check video settings on pi
         UsbCamera
-            piCamera = setUsbCamera("Pi Camera", 1, piRawStream),
-            lifeCam = setUsbCamera("LifeCam 3000", 0, lifeCamRawStream);
+            piCamera = new UsbCamera("Pi Camera", 1),
+            lifeCam = new UsbCamera("LifeCam 3000", 0);
 
         // Sinks to get image feed to use for cv processing
         CvSink
             piSink = new CvSink("CvSink_Pi"),
             lifeCamSink = new CvSink("CvSink_LifeCam");
 
+        // Pipelines to process our images
+        MercPipeline
+            gearPipeline = new MercPipeline(),
+            highGoalPipeline = new MercPipeline();
+
         // Change resolutions and framerates of cameras to be consistent.
         piCamera.setResolution(RES_X, RES_Y);
         piCamera.setFPS(FPS);
-        piCamera.setBrightness(0);
+        piCamera.setBrightness(50);
         piCamera.getProperty("auto_exposure").set(1);
         piCamera.getProperty("exposure_time_absolute").set(1);
 
@@ -80,6 +83,10 @@ public class Main {
         lifeCam.setFPS(FPS);
         lifeCam.setExposureManual(0);
         lifeCam.setBrightness(0);
+
+        // Set the source of the raw feed to their respective cameras
+        piRawStream.setSource(piCamera);
+        lifeCamRawStream.setSource(lifeCam);
 
         // Set sources of image sinks to get feeds from cameras
         piSink.setSource(piCamera);
@@ -94,9 +101,6 @@ public class Main {
             // All Mats and Lists should be stored outside the loop to avoid allocations
             // as they are expensive to create
             Mat img = new Mat();
-
-            // Initialize our pipeline
-            MercPipeline pipeline = new MercPipeline();
 
             // Infinitely process image
             while (!Thread.interrupted()) {
@@ -117,8 +121,8 @@ public class Main {
                 double startTime = System.currentTimeMillis();
 
                 // Process frame under here
-                pipeline.process(img);
-                ArrayList<MatOfPoint> contours = pipeline.filterContoursOutput();
+                gearPipeline.process(img);
+                ArrayList<MatOfPoint> contours = gearPipeline.filterContoursOutput();
 
                 if (contours.size() == 2) {
                     Rect target1, target2;
@@ -199,9 +203,6 @@ public class Main {
             // as they are expensive to create
             Mat img = new Mat();
 
-            // Initialize our pipeline
-            MercPipeline pipeline = new MercPipeline();
-
             // Infinitely process image
             while (!Thread.interrupted()) {
                 // Grab a frame. If it has a frame time of 0, there was an error.
@@ -221,8 +222,8 @@ public class Main {
                 double startTime = System.currentTimeMillis();
 
                 // Process frame under here
-                pipeline.process(img);
-                ArrayList<MatOfPoint> contours = pipeline.filterContoursOutput();
+                highGoalPipeline.process(img);
+                ArrayList<MatOfPoint> contours = highGoalPipeline.filterContoursOutput();
 
                 if (contours.size() == 2) {
                     Rect target1, target2;
@@ -337,74 +338,11 @@ public class Main {
                 Thread.sleep(1000);
                 shutdown = NetworkTable.getTable(rootTable).getBoolean("shutdown", false);
             }
+
+            // Shutdown the program when we're done
+            System.exit(0);
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            // Exit the program; this will start the shutdown hook.
-            System.exit(0);
         }
     }
-
-    // region Ignore
-    /**
-     * Sets up an HTTP camera to get an image feed from. The camera
-     * feed itself is published on a NetworkTable.
-     *
-     * @param cameraName The key of the camera as it appears on the NetworkTable
-     * @param server The {@link MjpegServer} to send the feed to
-     * @return the instance of the camera
-     */
-    private static HttpCamera setHttpCamera(String cameraName, MjpegServer server) {
-        // Start by grabbing the camera from NetworkTables
-        NetworkTable publishingTable = NetworkTable.getTable("CameraPublisher");
-        // Wait for robot to connect. Allow this to be attempted indefinitely
-        while (true) {
-            try {
-                if (publishingTable.getSubTables().size() > 0) {
-                    break;
-                }
-                Thread.sleep(500);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        HttpCamera camera = null;
-        if (!publishingTable.containsSubTable(cameraName)) {
-            return null;
-        }
-        ITable cameraTable = publishingTable.getSubTable(cameraName);
-        String[] urls = cameraTable.getStringArray("streams", null);
-        if (urls == null) {
-            return null;
-        }
-        ArrayList<String> fixedUrls = new ArrayList<String>();
-        for (String url : urls) {
-            if (url.startsWith("mjpg")) {
-                fixedUrls.add(url.split(":", 2)[1]);
-            }
-        }
-        camera = new HttpCamera("CoprocessorCamera", fixedUrls.toArray(new String[0]));
-        server.setSource(camera);
-        return camera;
-    }
-
-    /**
-     * Sets up a USB camera to get an image feed from.
-     *
-     *
-     * @param name the name to give this {@link UsbCamera}
-     * @param cameraId The device id of the camera
-     * @param server The {@link MjpegServer} to send the feed to
-     * @return the instance of the camera
-     */
-    private static UsbCamera setUsbCamera(String name, int cameraId, MjpegServer server) {
-        // This gets the image from a USB camera
-        // Usually this will be on device 0, but there are other overloads
-        // that can be used
-        UsbCamera camera = new UsbCamera(name, cameraId);
-        server.setSource(camera);
-        return camera;
-    }
-    // endregion
 }
