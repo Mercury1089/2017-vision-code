@@ -45,11 +45,11 @@ public class VisionThread extends Thread {
                 }
 
                 // Initialize variables for vision
-                double
-                        targetWidth = -1,
-                        targetHeight = -1;
-
-                double[] center = {-1, -1};
+                double[]
+                    center = {-1, -1},
+                    boundsTotal = {-1, -1},
+                    boundsTarget1 = {-1, 1},
+                    boundsTarget2 = {-1, -1};
 
                 double startTime = System.currentTimeMillis();
 
@@ -59,15 +59,24 @@ public class VisionThread extends Thread {
                 pipeline.process(img);
                 ArrayList<MatOfPoint> contours = pipeline.filterContoursOutput();
 
-                if (contours.size() == 2) {
+                contours.sort((MatOfPoint o1, MatOfPoint o2) -> {
+                        Rect
+                            r1 = Imgproc.boundingRect(o1),
+                            r2 = Imgproc.boundingRect(o2);
+
+                        return (int)Math.signum(r2.area() - r1.area());
+                });
+
+                if (contours.size() >= 2) {
                     Rect
                         target1 = Imgproc.boundingRect(contours.get(1)),
                         target2 = Imgproc.boundingRect(contours.get(0));
 
                     seeTarget = true;
 
-                    // The first rectangle should be the leftmost rectangle
-                    if (target2.x < target1.x) {
+                    // The first rectangle should be the leftmost rectangle OR
+                    // the topmost rectangle, depending on the target
+                    if (Math.abs(target2.x - target1.x) > 5 ? target2.x < target1.x : target2.y < target1.y) {
                         Rect swap;
                         swap = target1;
                         target1 = target2;
@@ -85,19 +94,32 @@ public class VisionThread extends Thread {
                             target1.y < target2.y ? target2.y + target2.height : target1.y + target1.height
                     );
 
-                    targetWidth = bottomRight.x - topLeft.x;
-                    targetHeight = bottomRight.y - topLeft.y;
+                    // Create the bounds for the entire target, the left/top target,
+                    // and the right/bottom target
+                    boundsTotal[0] = bottomRight.x - topLeft.x;
+                    boundsTotal[1] = bottomRight.y - topLeft.y;
+                    boundsTarget1[0] = target1.br().x - target1.tl().x;
+                    boundsTarget1[1] = target1.br().y - target1.tl().y;
+                    boundsTarget1[0] = target1.br().x - target1.tl().x;
+                    boundsTarget1[1] = target1.br().y - target1.tl().y;
 
-                    // Get the center of the target and check if we are centered
-                    Point targetCenter = new Point(topLeft.x + targetWidth / 2, topLeft.y + targetHeight / 2);
-                    center[0] = targetCenter.x;
-                    center[1] = targetCenter.y;
+                    // Get the center of the target to check for alignment
+                    center[0] = topLeft.x + boundsTotal[0] / 2;
+                    center[1] = topLeft.y + boundsTotal[1] / 2;
 
                     // Draw everything
                     Imgproc.rectangle(
                             img,
                             target1.br(),
                             target1.tl(),
+                            BLUE,
+                            3
+                    );
+
+                    Imgproc.rectangle(
+                            img,
+                            target2.br(),
+                            target2.tl(),
                             BLUE,
                             3
                     );
@@ -112,16 +134,16 @@ public class VisionThread extends Thread {
 
                     Imgproc.line(
                             img,
-                            new Point(targetCenter.x, targetCenter.y - 5),
-                            new Point(targetCenter.x, targetCenter.y + 5),
+                            new Point(center[0], center[1] - 5),
+                            new Point(center[0], center[1] + 5),
                             RED,
                             3
                     );
 
                     Imgproc.line(
                             img,
-                            new Point(targetCenter.x - 5, targetCenter.y),
-                            new Point(targetCenter.x + 5, targetCenter.y),
+                            new Point(center[0] - 5, center[1]),
+                            new Point(center[0] + 5, center[1]),
                             RED,
                             3
                     );
@@ -146,9 +168,12 @@ public class VisionThread extends Thread {
 
                 // Output some numbers to our network table
                 table.putBoolean("seeTarget", seeTarget);
-                table.putNumber("targetWidth", targetWidth);
-                table.putNumber("targetHeight", targetHeight);
+                table.putNumber("targetWidth", boundsTotal[0]);
+                table.putNumber("targetHeight", boundsTotal[1]);
+                table.putNumberArray("boundsTotal", boundsTotal);
                 table.putNumberArray("center", center);
+                table.putNumberArray("boundsTarget1", boundsTarget1);
+                table.putNumberArray("boundsTarget2", boundsTarget2);
                 table.putNumber("deltaTime", System.currentTimeMillis() - startTime);
                 table.putString("publishTime", Calendar.getInstance().getTime().toString());
 
