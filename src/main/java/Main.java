@@ -1,16 +1,11 @@
 import edu.wpi.cscore.*;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
-import edu.wpi.first.wpilibj.tables.ITable;
-import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
 
 public class Main {
     private static final Runtime RUNTIME;
-    private static final int
+    public static final int
             FPS = 15,
             RES_X = 320,
             RES_Y = 240;
@@ -19,10 +14,13 @@ public class Main {
 
     private static boolean shutdown = false;
 
+    private static final double[] DEF_THRESH = {45, 70, 140, 255, 35, 255};
+
     static {
         // Loads our OpenCV library before anything else.
         System.loadLibrary("opencv_java310");
 
+        // Initializes a field to access our runtime
         RUNTIME = Runtime.getRuntime();
     }
 
@@ -48,11 +46,6 @@ public class Main {
         NetworkTable
             gearVisionTable = NetworkTable.getTable(rootTable + "/gearVision"),
             highGoalTable = NetworkTable.getTable(rootTable + "/highGoal");
-
-        // ITableListener to update values for SmartDashboard
-        NetworkTable.getTable(rootTable + "/hslThreshold").addTableListener((ITable source, String key, Object value, boolean isNew) ->
-            MercPipeline.updateHSLThreshold(key, (Double)value)
-        );
 
         // All the Mjpeg servers to check out before and after of each feed
         // They can be found at http://roborio-1089-FRC.local:<port>
@@ -80,20 +73,24 @@ public class Main {
 
         // Pipelines to process our images
         MercPipeline
-            gearPipeline = new MercPipeline(),
-            highGoalPipeline = new MercPipeline();
+            gearPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdPi", DEF_THRESH)),
+            highGoalPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdLifeCam", DEF_THRESH));
 
         // Change resolutions and framerates of cameras to be consistent.
         piCamera.setResolution(RES_X, RES_Y);
         piCamera.setFPS(FPS);
-        piCamera.setBrightness(50);
+        piCamera.setBrightness(15);
+        piCamera.getProperty("contrast").set(100);
+        piCamera.getProperty("saturation").set(100);
         piCamera.getProperty("auto_exposure").set(1);
-        piCamera.getProperty("exposure_time_absolute").set(1);
+        piCamera.getProperty("exposure_time_absolute").set(20);
 
         lifeCam.setResolution(RES_X, RES_Y);
         lifeCam.setFPS(FPS);
-        lifeCam.setExposureManual(0);
         lifeCam.setBrightness(0);
+        lifeCam.getProperty("contrast").set(100);
+        lifeCam.getProperty("saturation").set(100);
+        lifeCam.setExposureManual(0);
 
         // Set the source of the raw feed to their respective cameras
         piRawStream.setSource(piCamera);
@@ -107,207 +104,9 @@ public class Main {
         piOutputStream.setSource(piSource);
         lifeCamOutputStream.setSource(lifeCamSource);
 
-        // Create the thread that will process gear vision targets
-        gearVisionThread = new Thread(() -> {
-            // All Mats and Lists should be stored outside the loop to avoid allocations
-            // as they are expensive to create
-            Mat img = new Mat();
-
-            // Infinitely process image
-            while (!Thread.interrupted()) {
-                // Grab a frame. If it has a frame time of 0, there was an error.
-                // Just skip and continue
-                if (piSink.grabFrame(img) == 0) {
-                    System.out.println(piSink.getError());
-                    continue;
-                }
-
-                // Initialize variables for vision
-                double
-                        targetWidth = -1,
-                        targetHeight = -1;
-
-                double[] center = {-1, -1};
-
-                double startTime = System.currentTimeMillis();
-
-                // Process frame under here
-                gearPipeline.process(img);
-                ArrayList<MatOfPoint> contours = gearPipeline.filterContoursOutput();
-
-                if (contours.size() == 2) {
-                    Rect target1, target2;
-
-                    if (Imgproc.boundingRect(contours.get(1)).x < Imgproc.boundingRect(contours.get(0)).x) {
-                        target1 = Imgproc.boundingRect(contours.get(1));
-                        target2 = Imgproc.boundingRect(contours.get(0));
-                    } else {
-                        target1 = Imgproc.boundingRect(contours.get(0));
-                        target2 = Imgproc.boundingRect(contours.get(1));
-                    }
-
-                    Scalar red = new Scalar(0, 0, 255);
-
-                    // Our targeting rect needs to encapsulate both vision targets
-                    Point topLeft = new Point(
-                            target1.x,
-                            target1.y < target2.y ? target1.y : target2.y
-                    );
-
-                    Point bottomRight = new Point(
-                            target2.x + target2.width,
-                            target1.y < target2.y ? target2.y + target2.height : target1.y + target1.height
-                    );
-
-                    targetWidth = bottomRight.x - topLeft.x;
-                    targetHeight = bottomRight.y - topLeft.y;
-
-                    // Get the center of the target and check if we are centered
-                    Point targetCenter = new Point(topLeft.x + targetWidth / 2, topLeft.y + targetHeight / 2);
-                    center[0] = targetCenter.x;
-                    center[1] = targetCenter.y;
-
-                    // Draw target
-                    Imgproc.rectangle(
-                            img,
-                            topLeft,
-                            bottomRight,
-                            red,
-                            3
-                    );
-
-                    Imgproc.line(
-                            img,
-                            new Point(targetCenter.x, targetCenter.y - 5),
-                            new Point(targetCenter.x, targetCenter.y + 5),
-                            red,
-                            3
-                    );
-
-                    Imgproc.line(
-                            img,
-                            new Point(targetCenter.x - 5, targetCenter.y),
-                            new Point(targetCenter.x + 5, targetCenter.y),
-                            red,
-                            3
-                    );
-                }
-
-                // Output some numbers to our network table
-                gearVisionTable.putNumber("targetWidth", targetWidth);
-                gearVisionTable.putNumber("targetHeight", targetHeight);
-                gearVisionTable.putNumberArray("center", center);
-                gearVisionTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
-                gearVisionTable.putString("publishTime", Calendar.getInstance().getTime().toString());
-
-                // Here is where you would write a processed image that you want to restream
-                // This will most likely be a marked up image of what the camera sees
-                // For now, we are just going to stream the HSV image
-                piSource.putFrame(img);
-                img.release();
-            }
-        }, "Thread-GearVision");
-
-        // Create the thread that will process gear vision targets
-        highGoalThread = new Thread(() -> {
-            // All Mats and Lists should be stored outside the loop to avoid allocations
-            // as they are expensive to create
-            Mat img = new Mat();
-
-            // Infinitely process image
-            while (!Thread.interrupted()) {
-                // Grab a frame. If it has a frame time of 0, there was an error.
-                // Just skip and continue
-                if (lifeCamSink.grabFrame(img) == 0) {
-                    System.out.println(lifeCamSink.getError());
-                    continue;
-                }
-
-                // Initialize variables for vision
-                double
-                        targetWidth = -1,
-                        targetHeight = -1;
-
-                double[] center = {-1, -1};
-
-                double startTime = System.currentTimeMillis();
-
-                // Process frame under here
-                highGoalPipeline.process(img);
-                ArrayList<MatOfPoint> contours = highGoalPipeline.filterContoursOutput();
-
-                if (contours.size() == 2) {
-                    Rect target1, target2;
-
-                    if (Imgproc.boundingRect(contours.get(1)).x < Imgproc.boundingRect(contours.get(0)).x) {
-                        target1 = Imgproc.boundingRect(contours.get(1));
-                        target2 = Imgproc.boundingRect(contours.get(0));
-                    } else {
-                        target1 = Imgproc.boundingRect(contours.get(0));
-                        target2 = Imgproc.boundingRect(contours.get(1));
-                    }
-
-                    Scalar red = new Scalar(0, 0, 255);
-
-                    // Our targeting rect needs to encapsulate both vision targets
-                    Point topLeft = new Point(
-                            target1.x,
-                            target1.y < target2.y ? target1.y : target2.y
-                    );
-
-                    Point bottomRight = new Point(
-                            target2.x + target2.width,
-                            target1.y < target2.y ? target2.y + target2.height : target1.y + target1.height
-                    );
-
-                    targetWidth = bottomRight.x - topLeft.x;
-                    targetHeight = bottomRight.y - topLeft.y;
-
-                    // Get the center of the target and check if we are centered
-                    Point targetCenter = new Point(topLeft.x + targetWidth / 2, topLeft.y + targetHeight / 2);
-                    center[0] = targetCenter.x;
-                    center[1] = targetCenter.y;
-
-                    // Draw target
-                    Imgproc.rectangle(
-                            img,
-                            topLeft,
-                            bottomRight,
-                            red,
-                            3
-                    );
-
-                    Imgproc.line(
-                            img,
-                            new Point(targetCenter.x, targetCenter.y - 5),
-                            new Point(targetCenter.x, targetCenter.y + 5),
-                            red,
-                            3
-                    );
-
-                    Imgproc.line(
-                            img,
-                            new Point(targetCenter.x - 5, targetCenter.y),
-                            new Point(targetCenter.x + 5, targetCenter.y),
-                            red,
-                            3
-                    );
-                }
-
-                // Output some numbers to our network table
-                highGoalTable.putNumber("targetWidth", targetWidth);
-                highGoalTable.putNumber("targetHeight", targetHeight);
-                highGoalTable.putNumberArray("center", center);
-                highGoalTable.putNumber("deltaTime", System.currentTimeMillis() - startTime);
-                highGoalTable.putString("publishTime", Calendar.getInstance().getTime().toString());
-
-                // Here is where you would write a processed image that you want to restream
-                // This will most likely be a marked up image of what the camera sees
-                // For now, we are just going to stream the HSV image
-                lifeCamSource.putFrame(img);
-                img.release();
-            }
-        }, "Thread-HighGoal");
+        // Create threads
+        gearVisionThread = new VisionThread(piSink, piSource, gearPipeline, gearVisionTable, "gear_vision");
+        highGoalThread = new VisionThread(lifeCamSink, lifeCamSource, highGoalPipeline, highGoalTable, "high_goal");
 
         RUNTIME.addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down...");

@@ -17,35 +17,18 @@ public class MercPipeline {
 	private Mat hslThresholdOutput = new Mat();
 	private ArrayList<MatOfPoint> findContoursOutput = new ArrayList<MatOfPoint>();
 	private ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<MatOfPoint>();
-	private static final double[]
+	private final double[]
 		HSL_THRESHOLD_HUE = {69.60429759580393, 94.94890927847149},
 		HSL_THRESHOLD_SAT = {0.0, 255.0},
 		HSL_THRESHOLD_LUM = {87.14028776978417, 255.0};
 
-
-	public static void updateHSLThreshold(String var, double val) {
-		switch(var) {
-			case "hueMin":
-				HSL_THRESHOLD_HUE[0] = val;
-				break;
-			case "hueMax":
-				HSL_THRESHOLD_HUE[1] = val;
-				break;
-			case "satMin":
-				HSL_THRESHOLD_SAT[0] = val;
-				break;
-			case "satMax":
-				HSL_THRESHOLD_SAT[1] = val;
-				break;
-			case "lumMin":
-				HSL_THRESHOLD_LUM[0] = val;
-				break;
-			case "lumMax":
-				HSL_THRESHOLD_LUM[1] = val;
-				break;
-			default:
-				throw new IllegalArgumentException("Not a valid key for the HSL threshold");
-		}
+	public MercPipeline(double[] threshold) {
+		HSL_THRESHOLD_HUE[0] = threshold[0];
+		HSL_THRESHOLD_HUE[1] = threshold[1];
+		HSL_THRESHOLD_SAT[0] = threshold[2];
+		HSL_THRESHOLD_SAT[1] = threshold[3];
+		HSL_THRESHOLD_LUM[0] = threshold[4];
+		HSL_THRESHOLD_LUM[1] = threshold[5];
 	}
 
 	/**
