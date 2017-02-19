@@ -180,8 +180,8 @@ public class VisionThread extends Thread {
                 table.putNumber("targetHeight", boundsTotal[1]);
                 table.putNumberArray("boundsTotal", boundsTotal);
                 table.putNumberArray("center", center);
-                table.putNumberArray("targetCenter1", targetCenter1);
-                table.putNumberArray("targetCenter2", targetCenter2);
+                table.putNumberArray("centerTarget1", targetCenter1);
+                table.putNumberArray("centerTarget2", targetCenter2);
                 table.putNumberArray("boundsTarget1", boundsTarget1);
                 table.putNumberArray("boundsTarget2", boundsTarget2);
                 table.putNumber("deltaTime", System.currentTimeMillis() - startTime);
