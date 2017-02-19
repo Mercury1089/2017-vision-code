@@ -100,8 +100,8 @@ public class VisionThread extends Thread {
                     boundsTotal[1] = bottomRight.y - topLeft.y;
                     boundsTarget1[0] = target1.br().x - target1.tl().x;
                     boundsTarget1[1] = target1.br().y - target1.tl().y;
-                    boundsTarget1[0] = target1.br().x - target1.tl().x;
-                    boundsTarget1[1] = target1.br().y - target1.tl().y;
+                    boundsTarget2[0] = target2.br().x - target2.tl().x;
+                    boundsTarget2[1] = target2.br().y - target2.tl().y;
 
                     // Get the center of the target to check for alignment
                     center[0] = topLeft.x + boundsTotal[0] / 2;
