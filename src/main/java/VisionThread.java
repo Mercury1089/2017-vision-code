@@ -47,6 +47,8 @@ public class VisionThread extends Thread {
                 // Initialize variables for vision
                 double[]
                     center = {-1, -1},
+                    targetCenter1 = {-1, -1},
+                    targetCenter2 = {-1, -1},
                     boundsTotal = {-1, -1},
                     boundsTarget1 = {-1, 1},
                     boundsTarget2 = {-1, -1};
@@ -106,6 +108,12 @@ public class VisionThread extends Thread {
                     // Get the center of the target to check for alignment
                     center[0] = topLeft.x + boundsTotal[0] / 2;
                     center[1] = topLeft.y + boundsTotal[1] / 2;
+                    
+                    targetCenter1[0] = target1.tl().x + boundsTarget1[0] / 2;
+                    targetCenter1[1] = target1.tl().y + boundsTarget1[1] / 2;
+                    
+                    targetCenter2[0] = target2.tl().x + boundsTarget2[0] / 2;
+                    targetCenter2[1] = target2.tl().y + boundsTarget2[1] / 2;
 
                     // Draw everything
                     Imgproc.rectangle(
@@ -172,6 +180,8 @@ public class VisionThread extends Thread {
                 table.putNumber("targetHeight", boundsTotal[1]);
                 table.putNumberArray("boundsTotal", boundsTotal);
                 table.putNumberArray("center", center);
+                table.putNumberArray("targetCenter1", targetCenter1);
+                table.putNumberArray("targetCenter2", targetCenter2);
                 table.putNumberArray("boundsTarget1", boundsTarget1);
                 table.putNumberArray("boundsTarget2", boundsTarget2);
                 table.putNumber("deltaTime", System.currentTimeMillis() - startTime);
