@@ -46,7 +46,9 @@ public class VisionThread extends Thread {
 
                 // Initialize variables for vision
                 double[]
-                    center = {-1, -1},
+                    centerTotal = {-1, -1},
+                    centerTarget1 = {-1, -1},
+                    centerTarget2 = {-1, -1},
                     boundsTotal = {-1, -1},
                     boundsTarget1 = {-1, 1},
                     boundsTarget2 = {-1, -1};
@@ -94,7 +96,8 @@ public class VisionThread extends Thread {
                             target1.y < target2.y ? target2.y + target2.height : target1.y + target1.height
                     );
 
-                    // Create the bounds for the entire target, the left/top target,
+                    // Create the bounds for the entire target,
+                    // the left/top target,
                     // and the right/bottom target
                     boundsTotal[0] = bottomRight.x - topLeft.x;
                     boundsTotal[1] = bottomRight.y - topLeft.y;
@@ -103,9 +106,15 @@ public class VisionThread extends Thread {
                     boundsTarget1[0] = target1.br().x - target1.tl().x;
                     boundsTarget1[1] = target1.br().y - target1.tl().y;
 
-                    // Get the center of the target to check for alignment
-                    center[0] = topLeft.x + boundsTotal[0] / 2;
-                    center[1] = topLeft.y + boundsTotal[1] / 2;
+                    // Get the center of the entire target,
+                    // the left/top target,
+                    // and the right/bottom target
+                    centerTotal[0] = topLeft.x + boundsTotal[0] / 2;
+                    centerTotal[1] = topLeft.y + boundsTotal[1] / 2;
+                    centerTarget1[0] = target1.tl().x + target1.width / 2.0;
+                    centerTarget1[1] = target1.tl().y + target1.height / 2.0;
+                    centerTarget2[0] = target2.tl().x + target2.width / 2.0;
+                    centerTarget2[1] = target2.tl().y + target2.height / 2.0;
 
                     // Draw everything
                     Imgproc.rectangle(
@@ -134,16 +143,16 @@ public class VisionThread extends Thread {
 
                     Imgproc.line(
                             img,
-                            new Point(center[0], center[1] - 5),
-                            new Point(center[0], center[1] + 5),
+                            new Point(centerTotal[0], centerTotal[1] - 5),
+                            new Point(centerTotal[0], centerTotal[1] + 5),
                             RED,
                             3
                     );
 
                     Imgproc.line(
                             img,
-                            new Point(center[0] - 5, center[1]),
-                            new Point(center[0] + 5, center[1]),
+                            new Point(centerTotal[0] - 5, centerTotal[1]),
+                            new Point(centerTotal[0] + 5, centerTotal[1]),
                             RED,
                             3
                     );
@@ -171,7 +180,10 @@ public class VisionThread extends Thread {
                 table.putNumber("targetWidth", boundsTotal[0]);
                 table.putNumber("targetHeight", boundsTotal[1]);
                 table.putNumberArray("boundsTotal", boundsTotal);
-                table.putNumberArray("center", center);
+                table.putNumberArray("center", centerTotal);
+                table.putNumberArray("centerTotal", centerTotal);
+                table.putNumberArray("centerTarget1", centerTarget1);
+                table.putNumberArray("centerTarget2", centerTarget2);
                 table.putNumberArray("boundsTarget1", boundsTarget1);
                 table.putNumberArray("boundsTarget2", boundsTarget2);
                 table.putNumber("deltaTime", System.currentTimeMillis() - startTime);
