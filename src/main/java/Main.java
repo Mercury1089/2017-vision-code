@@ -79,9 +79,10 @@ public class Main {
         // Change resolutions and framerates of cameras to be consistent.
         piCamera.setResolution(RES_X, RES_Y);
         piCamera.setFPS(FPS);
-        piCamera.setBrightness(15);
+        piCamera.setBrightness(0);
         piCamera.getProperty("contrast").set(100);
         piCamera.getProperty("saturation").set(100);
+        piCamera.getProperty("power_line_frequency").set(2);
         piCamera.getProperty("auto_exposure").set(1);
         piCamera.getProperty("exposure_time_absolute").set(20);
 
@@ -90,6 +91,9 @@ public class Main {
         lifeCam.setBrightness(0);
         lifeCam.getProperty("contrast").set(100);
         lifeCam.getProperty("saturation").set(100);
+        piCamera.getProperty("power_line_frequency").set(2);
+        lifeCam.getProperty("white_balance_temperature_auto").set(0);
+        lifeCam.getProperty("white_balance_temperature").set(10000);
         lifeCam.setExposureManual(0);
 
         // Set the source of the raw feed to their respective cameras
@@ -128,11 +132,13 @@ public class Main {
             piCamera.free();
             lifeCam.free();
 
-            // Run a shutdown command.
-            try {
-                RUNTIME.exec("sudo shutdown -t 5");
-            } catch (Exception e) {
-                e.printStackTrace();
+            // Run a shutdown command only if the shutdown flag was ticked
+            if (shutdown) {
+                try {
+                    RUNTIME.exec("sudo shutdown -t 5");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }));
 

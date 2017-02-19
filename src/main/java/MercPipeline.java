@@ -47,13 +47,13 @@ public class MercPipeline {
 
 		// Step Filter_Contours0:
 		ArrayList<MatOfPoint> filterContoursContours = findContoursOutput;
-		double filterContoursMinArea = 100.0;
+		double filterContoursMinArea = 50.0;
 		double filterContoursMinPerimeter = 0;
 		double filterContoursMinWidth = 0;
 		double filterContoursMaxWidth = 1000;
 		double filterContoursMinHeight = 0;
 		double filterContoursMaxHeight = 1000;
-		double[] filterContoursSolidity = {50, 100};
+		double[] filterContoursSolidity = {80, 100};
 		double filterContoursMaxVertices = 1000000;
 		double filterContoursMinVertices = 0;
 		double filterContoursMinRatio = 0;
