@@ -7,9 +7,12 @@ public class Main {
     private static final Runtime RUNTIME;
     public static final int
             FPS = 15,
-            RES_X = 320,
-            RES_Y = 240;
-
+            RES_X = 640,
+            RES_Y = 480;
+//    		PI_RES_X = 640,
+//    		PI_RES_Y = 480;
+    
+    
     private static Thread gearVisionThread, highGoalThread;
 
     private static boolean shutdown = false;
