@@ -30,6 +30,33 @@ public class MercPipeline {
 		HSL_THRESHOLD_LUM[0] = threshold[4];
 		HSL_THRESHOLD_LUM[1] = threshold[5];
 	}
+	
+	public MercPipeline() {
+		
+	}
+	
+	public void updateHSL(String key, double val) {
+		switch(key) {
+			case "hueMin":
+				HSL_THRESHOLD_HUE[0] = val;
+				break;
+			case "hueMax":
+				HSL_THRESHOLD_HUE[1] = val;
+				break;
+			case "satMin":
+				HSL_THRESHOLD_SAT[0] = val;
+				break;
+			case "satMax":
+				HSL_THRESHOLD_SAT[1] = val;
+				break;
+			case "lumMin":
+				HSL_THRESHOLD_LUM[0] = val;
+				break;
+			case "lumMax":
+				HSL_THRESHOLD_LUM[1] = val;
+				break;
+		}
+	}
 
 	/**
 	 * This is the primary method that runs the entire pipeline and updates the outputs.

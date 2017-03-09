@@ -1,7 +1,12 @@
-import edu.wpi.cscore.*;
-import edu.wpi.first.wpilibj.networktables.NetworkTable;
-
 import java.io.IOException;
+
+import edu.wpi.cscore.CvSink;
+import edu.wpi.cscore.CvSource;
+import edu.wpi.cscore.MjpegServer;
+import edu.wpi.cscore.UsbCamera;
+import edu.wpi.cscore.VideoMode;
+import edu.wpi.first.wpilibj.networktables.NetworkTable;
+import edu.wpi.first.wpilibj.tables.ITable;
 
 public class Main {
     private static final Runtime RUNTIME;
@@ -9,9 +14,6 @@ public class Main {
             FPS = 15,
             RES_X = 320,
             RES_Y = 240;
-//    		PI_RES_X = 640,
-//    		PI_RES_Y = 480;
-    
     
     private static Thread gearVisionThread, highGoalThread;
 
@@ -78,11 +80,20 @@ public class Main {
         MercPipeline
             gearPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdPi", DEF_THRESH)),
             highGoalPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdLifeCam", DEF_THRESH));
+	        // gearPipeline = new MercPipeline(), highGoalPipeline = new MercPipeline();
+        
+        // Add listeners for sliders for pipeline HSL stuff
+    	gearVisionTable.getSubTable("hslThreshold").addTableListener(
+    			(ITable table, String key, Object value, boolean isNew) -> gearPipeline.updateHSL(key, (Double)value)
+		);
+    	highGoalTable.getSubTable("hslThreshold").addTableListener(
+    			(ITable table, String key, Object value, boolean isNew) -> highGoalPipeline.updateHSL(key, (Double)value)
+		);
 
         // Change resolutions and framerates of cameras to be consistent.
         piCamera.setResolution(RES_X, RES_Y);
         piCamera.setFPS(FPS);
-        piCamera.setBrightness(15);
+        piCamera.setBrightness(20);
         piCamera.getProperty("contrast").set(100);
         piCamera.getProperty("saturation").set(100);
         piCamera.getProperty("auto_exposure").set(1);
@@ -132,10 +143,12 @@ public class Main {
             lifeCam.free();
 
             // Run a shutdown command.
-            try {
-                RUNTIME.exec("sudo shutdown -t 5");
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (shutdown) {
+	            try {
+	                RUNTIME.exec("sudo shutdown -t 5");
+	            } catch (Exception e) {
+	                e.printStackTrace();
+	            }
             }
         }));
 
