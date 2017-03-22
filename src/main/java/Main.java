@@ -86,6 +86,7 @@ public class Main {
     	gearVisionTable.getSubTable("hslThreshold").addTableListener(
     			(ITable table, String key, Object value, boolean isNew) -> gearPipeline.updateHSL(key, (Double)value)
 		);
+    	
     	highGoalTable.getSubTable("hslThreshold").addTableListener(
     			(ITable table, String key, Object value, boolean isNew) -> highGoalPipeline.updateHSL(key, (Double)value)
 		);
@@ -104,7 +105,8 @@ public class Main {
         lifeCam.setBrightness(0);
         lifeCam.getProperty("contrast").set(100);
         lifeCam.getProperty("saturation").set(100);
-        lifeCam.setExposureManual(0);
+        lifeCam.getProperty("white_balance_temperature_auto").set(0);
+        lifeCam.getProperty("white_balance_temperature").set(10000);
 
         // Set the source of the raw feed to their respective cameras
         piRawStream.setSource(piCamera);
