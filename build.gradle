@@ -27,6 +27,7 @@ apply from: 'dependencies.gradle'
 remotes {
   pi {
     host = '10.10.89.20'
+    port = 5802
     user = 'pi'
     password = 'raspberry'
   }
@@ -92,6 +93,7 @@ task writeExecuteScript() {
       runFile.write "java -Djava.library.path=. -jar ${projectName}-all.jar"
     } else {
       def runFile = new File("${buildDir}/run${projectName}")
+      runFile.write "cd /home/pi/output"
       runFile.write "java -Djava.library.path=. -jar ${projectName}-all.jar"
     }
   }

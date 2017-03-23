@@ -1,6 +1,3 @@
-import edu.wpi.cscore.*;
-import edu.wpi.first.wpilibj.networktables.NetworkTable;
-
 import java.io.IOException;
 
 public class Main {
@@ -75,11 +72,21 @@ public class Main {
         MercPipeline
             gearPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdPi", DEF_THRESH)),
             highGoalPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdLifeCam", DEF_THRESH));
+	        // gearPipeline = new MercPipeline(), highGoalPipeline = new MercPipeline();
+
+        // Add listeners for sliders for pipeline HSL stuff
+    	gearVisionTable.getSubTable("hslThreshold").addTableListener(
+    			(ITable table, String key, Object value, boolean isNew) -> gearPipeline.updateHSL(key, (Double)value)
+		);
+
+    	highGoalTable.getSubTable("hslThreshold").addTableListener(
+    			(ITable table, String key, Object value, boolean isNew) -> highGoalPipeline.updateHSL(key, (Double)value)
+		);
 
         // Change resolutions and framerates of cameras to be consistent.
         piCamera.setResolution(RES_X, RES_Y);
         piCamera.setFPS(FPS);
-        piCamera.setBrightness(0);
+        piCamera.setBrightness(20);
         piCamera.getProperty("contrast").set(100);
         piCamera.getProperty("saturation").set(100);
         piCamera.getProperty("power_line_frequency").set(2);
