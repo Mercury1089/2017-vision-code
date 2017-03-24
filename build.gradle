@@ -93,7 +93,6 @@ task writeExecuteScript() {
       runFile.write "java -Djava.library.path=. -jar ${projectName}-all.jar"
     } else {
       def runFile = new File("${buildDir}/run${projectName}")
-      runFile.write "cd /home/pi/output"
       runFile.write "java -Djava.library.path=. -jar ${projectName}-all.jar"
     }
   }

@@ -18,9 +18,9 @@ public class MercPipeline {
 	private ArrayList<MatOfPoint> findContoursOutput = new ArrayList<MatOfPoint>();
 	private ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<MatOfPoint>();
 	private final double[]
-		HSL_THRESHOLD_HUE = {69.60429759580393, 94.94890927847149},
-		HSL_THRESHOLD_SAT = {0.0, 255.0},
-		HSL_THRESHOLD_LUM = {87.14028776978417, 255.0};
+		HSL_THRESHOLD_HUE = {47.0, 95.0},
+		HSL_THRESHOLD_SAT = {197.0, 255.0},
+		HSL_THRESHOLD_LUM = {83.0, 195.0};
 
 	public MercPipeline(double[] threshold) {
 		HSL_THRESHOLD_HUE[0] = threshold[0];

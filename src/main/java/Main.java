@@ -83,11 +83,11 @@ public class Main {
 	        // gearPipeline = new MercPipeline(), highGoalPipeline = new MercPipeline();
 
         // Add listeners for sliders for pipeline HSL stuff
-    	gearVisionTable.getSubTable("hslThreshold").addTableListener(
+        NetworkTable.getTable(rootTable + "/gearVision/gearVisionTable").addTableListener(
     			(ITable table, String key, Object value, boolean isNew) -> gearPipeline.updateHSL(key, (Double)value)
 		);
 
-    	highGoalTable.getSubTable("hslThreshold").addTableListener(
+        NetworkTable.getTable(rootTable + "/gearVision/highGoalTable").addTableListener(
     			(ITable table, String key, Object value, boolean isNew) -> highGoalPipeline.updateHSL(key, (Double)value)
 		);
 
@@ -103,7 +103,7 @@ public class Main {
 
         lifeCam.setResolution(RES_X, RES_Y);
         lifeCam.setFPS(FPS);
-        lifeCam.setBrightness(0);
+        lifeCam.setBrightness(30);
         lifeCam.getProperty("contrast").set(100);
         lifeCam.getProperty("saturation").set(100);
         piCamera.getProperty("power_line_frequency").set(2);
