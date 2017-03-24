@@ -21,18 +21,16 @@ public class MercPipeline {
 		HSL_THRESHOLD_HUE = {47.0, 95.0},
 		HSL_THRESHOLD_SAT = {197.0, 255.0},
 		HSL_THRESHOLD_LUM = {83.0, 195.0};
+	private FilterContourSettings fcs;
 
-	public MercPipeline(double[] threshold) {
+	public MercPipeline(double[] threshold, FilterContourSettings filterContourSettings) {
 		HSL_THRESHOLD_HUE[0] = threshold[0];
 		HSL_THRESHOLD_HUE[1] = threshold[1];
 		HSL_THRESHOLD_SAT[0] = threshold[2];
 		HSL_THRESHOLD_SAT[1] = threshold[3];
 		HSL_THRESHOLD_LUM[0] = threshold[4];
 		HSL_THRESHOLD_LUM[1] = threshold[5];
-	}
-	
-	public MercPipeline() {
-		
+		fcs = filterContourSettings;
 	}
 	
 	public void updateHSL(String key, double val) {
@@ -74,18 +72,7 @@ public class MercPipeline {
 
 		// Step Filter_Contours0:
 		ArrayList<MatOfPoint> filterContoursContours = findContoursOutput;
-		double filterContoursMinArea = 50.0;
-		double filterContoursMinPerimeter = 0;
-		double filterContoursMinWidth = 0;
-		double filterContoursMaxWidth = 1000;
-		double filterContoursMinHeight = 0;
-		double filterContoursMaxHeight = 1000;
-		double[] filterContoursSolidity = {80, 100};
-		double filterContoursMaxVertices = 1000000;
-		double filterContoursMinVertices = 0;
-		double filterContoursMinRatio = 0;
-		double filterContoursMaxRatio = 1000;
-		filterContours(filterContoursContours, filterContoursMinArea, filterContoursMinPerimeter, filterContoursMinWidth, filterContoursMaxWidth, filterContoursMinHeight, filterContoursMaxHeight, filterContoursSolidity, filterContoursMaxVertices, filterContoursMinVertices, filterContoursMinRatio, filterContoursMaxRatio, filterContoursOutput);
+		filterContours(filterContoursContours, fcs.filterContoursMinArea, fcs.filterContoursMinPerimeter, fcs.filterContoursMinWidth, fcs.filterContoursMaxWidth, fcs.filterContoursMinHeight, fcs.filterContoursMaxHeight, fcs.filterContoursSolidity, fcs.filterContoursMaxVertices, fcs.filterContoursMinVertices, fcs.filterContoursMinRatio, fcs.filterContoursMaxRatio, filterContoursOutput);
 	}
 
 	/**

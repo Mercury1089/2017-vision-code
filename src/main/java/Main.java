@@ -76,10 +76,15 @@ public class Main {
             piSink = new CvSink("CvSink_Pi"),
             lifeCamSink = new CvSink("CvSink_LifeCam");
 
+        
+        FilterContourSettings gearFCS = new FilterContourSettings();
+        FilterContourSettings highGoalFCS = new FilterContourSettings();
+        
+        highGoalFCS.filterContoursSolidity[0] = 0;
         // Pipelines to process our images
         MercPipeline
-            gearPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdPi", DEF_THRESH)),
-            highGoalPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdLifeCam", DEF_THRESH));
+            gearPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdPi", DEF_THRESH), gearFCS),
+            highGoalPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdLifeCam", DEF_THRESH), highGoalFCS);
 	        // gearPipeline = new MercPipeline(), highGoalPipeline = new MercPipeline();
 
         // Add listeners for sliders for pipeline HSL stuff
