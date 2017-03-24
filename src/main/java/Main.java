@@ -89,11 +89,11 @@ public class Main {
 
         // Add listeners for sliders for pipeline HSL stuff
         NetworkTable.getTable(rootTable + "/gearVision/gearVisionTable").addTableListener(
-    			(ITable table, String key, Object value, boolean isNew) -> gearPipeline.updateHSL(key, (Double)value)
+    			(ITable table, String key, Object value, boolean isNew) -> updateVisionFromNT(gearPipeline, piCamera, key, (Double)value)
 		);
 
         NetworkTable.getTable(rootTable + "/gearVision/highGoalTable").addTableListener(
-    			(ITable table, String key, Object value, boolean isNew) -> highGoalPipeline.updateHSL(key, (Double)value)
+    			(ITable table, String key, Object value, boolean isNew) -> updateVisionFromNT(highGoalPipeline, lifeCam, key, (Double)value)
 		);
 
         // Change resolutions and framerates of cameras to be consistent.
@@ -181,4 +181,16 @@ public class Main {
             e.printStackTrace();
         }
     }
+    
+    public static void updateVisionFromNT(MercPipeline pipeline, UsbCamera camera, String key, Object val) {
+    	switch(key) {
+    	case "brightness":
+    		camera.setBrightness((int)val);
+    		break;
+    	default:
+    		pipeline.updateHSL(key, (Double)val);
+    		break;
+    	}
+    }
+
 }
