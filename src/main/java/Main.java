@@ -1,12 +1,8 @@
-import java.io.IOException;
-
-import edu.wpi.cscore.CvSink;
-import edu.wpi.cscore.CvSource;
-import edu.wpi.cscore.MjpegServer;
-import edu.wpi.cscore.UsbCamera;
-import edu.wpi.cscore.VideoMode;
+import edu.wpi.cscore.*;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.tables.ITable;
+
+import java.io.IOException;
 
 public class Main {
     private static final Runtime RUNTIME;
@@ -79,21 +75,29 @@ public class Main {
         
         FilterContourSettings gearFCS = new FilterContourSettings();
         FilterContourSettings highGoalFCS = new FilterContourSettings();
-        
-        highGoalFCS.filterContoursSolidity[0] = 0;
+
         // Pipelines to process our images
         MercPipeline
             gearPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdPi", DEF_THRESH), gearFCS),
             highGoalPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdLifeCam", DEF_THRESH), highGoalFCS);
-	        // gearPipeline = new MercPipeline(), highGoalPipeline = new MercPipeline();
 
-        // Add listeners for sliders for pipeline HSL stuff
-        NetworkTable.getTable(rootTable + "/gearVision/gearVisionTable").addTableListener(
-    			(ITable table, String key, Object value, boolean isNew) -> updateVisionFromNT(gearPipeline, piCamera, key, (Double)value)
+        // Add listeners for values for camera settings and HSL settings
+        NetworkTable.getTable(rootTable + "/gearVision").addTableListener(
+    			(ITable table, String key, Object value, boolean isNew) -> {
+    			    if ("brightness".equals(key))
+    			        piCamera.setBrightness((int)value);
+    			    else
+    			        gearPipeline.updateHSL(key, (Double)value);
+                }
 		);
 
-        NetworkTable.getTable(rootTable + "/gearVision/highGoalTable").addTableListener(
-    			(ITable table, String key, Object value, boolean isNew) -> updateVisionFromNT(highGoalPipeline, lifeCam, key, (Double)value)
+        NetworkTable.getTable(rootTable + "/highGoal").addTableListener(
+                (ITable table, String key, Object value, boolean isNew) -> {
+                    if ("brightness".equals(key))
+                        lifeCam.setBrightness((int)value);
+                    else
+                        highGoalPipeline.updateHSL(key, (Double)value);
+                }
 		);
 
         // Change resolutions and framerates of cameras to be consistent.
@@ -111,7 +115,6 @@ public class Main {
         lifeCam.setBrightness(30);
         lifeCam.getProperty("contrast").set(100);
         lifeCam.getProperty("saturation").set(100);
-        piCamera.getProperty("power_line_frequency").set(2);
         lifeCam.getProperty("white_balance_temperature_auto").set(0);
         lifeCam.getProperty("white_balance_temperature").set(10000);
         lifeCam.setExposureManual(0);
@@ -182,15 +185,17 @@ public class Main {
         }
     }
     
+/*
     public static void updateVisionFromNT(MercPipeline pipeline, UsbCamera camera, String key, Object val) {
     	switch(key) {
-    	case "brightness":
-    		camera.setBrightness((int)val);
-    		break;
-    	default:
-    		pipeline.updateHSL(key, (Double)val);
-    		break;
+            case "brightness":
+                camera.setBrightness((int)val);
+                break;
+            default:
+                pipeline.updateHSL(key, (Double)val);
+                break;
     	}
     }
+*/
 
 }

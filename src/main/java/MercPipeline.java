@@ -17,11 +17,13 @@ public class MercPipeline {
 	private Mat hslThresholdOutput = new Mat();
 	private ArrayList<MatOfPoint> findContoursOutput = new ArrayList<MatOfPoint>();
 	private ArrayList<MatOfPoint> filterContoursOutput = new ArrayList<MatOfPoint>();
+
 	private final double[]
 		HSL_THRESHOLD_HUE = {47.0, 95.0},
 		HSL_THRESHOLD_SAT = {197.0, 255.0},
 		HSL_THRESHOLD_LUM = {83.0, 195.0};
-	private FilterContourSettings fcs;
+
+	private final FilterContourSettings FCS;
 
 	public MercPipeline(double[] threshold, FilterContourSettings filterContourSettings) {
 		HSL_THRESHOLD_HUE[0] = threshold[0];
@@ -30,9 +32,15 @@ public class MercPipeline {
 		HSL_THRESHOLD_SAT[1] = threshold[3];
 		HSL_THRESHOLD_LUM[0] = threshold[4];
 		HSL_THRESHOLD_LUM[1] = threshold[5];
-		fcs = filterContourSettings;
+		FCS = filterContourSettings;
 	}
-	
+
+	/**
+	 * Updates a value in the HSL threshold based on the key passed in.
+	 *
+	 * @param key the name of the value to update
+	 * @param val the value to set the specified HSL value to
+	 */
 	public void updateHSL(String key, double val) {
 		switch(key) {
 			case "hueMin":
@@ -57,11 +65,13 @@ public class MercPipeline {
 	}
 
 	/**
-	 * This is the primary method that runs the entire pipeline and updates the outputs.
+	 * Runs a {@link Mat} through the pipeline and updates the outputs.
+	 *
+	 * @param input the {@code Mat} to process
 	 */
-	public void process(Mat source0) {
+	public void process(Mat input) {
 		// Step HSL_Threshold0:
-		Mat hslThresholdInput = source0;
+		Mat hslThresholdInput = input;
 
 		hslThreshold(hslThresholdInput, HSL_THRESHOLD_HUE, HSL_THRESHOLD_SAT, HSL_THRESHOLD_LUM, hslThresholdOutput);
 
@@ -72,7 +82,8 @@ public class MercPipeline {
 
 		// Step Filter_Contours0:
 		ArrayList<MatOfPoint> filterContoursContours = findContoursOutput;
-		filterContours(filterContoursContours, fcs.filterContoursMinArea, fcs.filterContoursMinPerimeter, fcs.filterContoursMinWidth, fcs.filterContoursMaxWidth, fcs.filterContoursMinHeight, fcs.filterContoursMaxHeight, fcs.filterContoursSolidity, fcs.filterContoursMaxVertices, fcs.filterContoursMinVertices, fcs.filterContoursMinRatio, fcs.filterContoursMaxRatio, filterContoursOutput);
+		//filterContours(filterContoursContours, FCS.minArea, FCS.minPerimeter, FCS.minWidth, FCS.maxWidth, FCS.minHeight, FCS.maxHeight, FCS.solidity, FCS.maxVerts, FCS.minVerts, FCS.minRatio, FCS.maxRatio, filterContoursOutput);
+		filterContours(filterContoursContours, FCS.minArea, filterContoursOutput);
 	}
 
 	/**
@@ -103,10 +114,10 @@ public class MercPipeline {
 	 * Segment an image based on hue, saturation, and luminance ranges.
 	 *
 	 * @param input The image on which to perform the HSL threshold.
-	 * @param hue The min and max hue
-	 * @param sat The min and max saturation
-	 * @param lum The min and max luminance
-	 * @param out The image in which to store the output.
+	 * @param hue   The min and max hue
+	 * @param sat   The min and max saturation
+	 * @param lum   The min and max luminance
+	 * @param out   The image in which to store the output.
 	 */
 	private void hslThreshold(Mat input, double[] hue, double[] sat, double[] lum,
 		Mat out) {
@@ -117,9 +128,10 @@ public class MercPipeline {
 
 	/**
 	 * Sets the values of pixels in a binary image to their distance to the nearest black pixel.
-	 * @param input The image on which to perform the Distance Transform.
+	 *
+	 * @param input        the image on which to perform the Distance Transform.
 	 * @param externalOnly
-	 * @param contours the {@link List} to store the contours in.
+	 * @param contours     the {@link List} to store the contours in.
 	 */
 	private void findContours(Mat input, boolean externalOnly,
 		List<MatOfPoint> contours) {
@@ -136,6 +148,24 @@ public class MercPipeline {
 		Imgproc.findContours(input, contours, hierarchy, mode, method);
 	}
 
+	/**
+	 * Filters out contours that are too small in area.
+	 *
+	 * @param input    the list of {@code MatOfPoint}s to filter
+	 * @param minArea  the minimum area, in pixels, that any contour can be
+	 * @param output   the list of {@code MatOfPoint}s that met the criteria
+	 */
+	private void filterContours(List<MatOfPoint> input, double minArea, List<MatOfPoint> output) {
+		output.clear();
+		for(MatOfPoint i : input) {
+			double area = Imgproc.contourArea(i);
+
+			if (area < minArea)
+				continue;
+
+			output.add(i);
+		}
+	}
 
 	/**
 	 * Filters out contours that do not meet certain criteria.
@@ -152,6 +182,9 @@ public class MercPipeline {
 	 * @param maxVertexCount maximum vertex Count
 	 * @param minRatio minimum ratio of width to height
 	 * @param maxRatio maximum ratio of width to height
+	 *
+	 * @deprecated filterContours(1) takes less time to process as it does not
+	 *             require going through unused criteria, e.g. vertex filtering.
 	 */
 	private void filterContours(List<MatOfPoint> inputContours, double minArea,
 		double minPerimeter, double minWidth, double maxWidth, double minHeight, double

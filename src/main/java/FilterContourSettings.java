@@ -1,13 +1,17 @@
+/**
+ * This class encapsulates all the settings used when filtering contours.
+ * This should be used on a per-pipeline basis.
+ */
 public class FilterContourSettings {
-	public double filterContoursMinArea = 50.0;
-	public double filterContoursMinPerimeter = 0;
-	public double filterContoursMinWidth = 0;
-	public double filterContoursMaxWidth = 1000;
-	public double filterContoursMinHeight = 0;
-	public double filterContoursMaxHeight = 1000;
-	public double[] filterContoursSolidity = {80, 100};
-	public double filterContoursMaxVertices = 1000000;
-	public double filterContoursMinVertices = 0;
-	public double filterContoursMinRatio = 0;
-	public double filterContoursMaxRatio = 1000;
+	public double minArea = 50.0;
+	public double minPerimeter = 0;
+	public double minWidth = 0;
+	public double maxWidth = 1000;
+	public double minHeight = 0;
+	public double maxHeight = 1000;
+	public double[] solidity = {80, 100};
+	public double maxVerts = 1000000;
+	public double minVerts = 0;
+	public double minRatio = 0;
+	public double maxRatio = 1000;
 }
