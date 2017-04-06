@@ -133,8 +133,7 @@ public class MercPipeline {
 	 * @param externalOnly
 	 * @param contours     the {@link List} to store the contours in.
 	 */
-	private void findContours(Mat input, boolean externalOnly,
-		List<MatOfPoint> contours) {
+	private void findContours(Mat input, boolean externalOnly, List<MatOfPoint> contours) {
 		Mat hierarchy = new Mat();
 		contours.clear();
 		int mode;

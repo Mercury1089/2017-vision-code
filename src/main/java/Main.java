@@ -17,6 +17,9 @@ public class Main {
 
     private static final double[] DEF_THRESH = {45, 70, 140, 255, 35, 255};
 
+    // The root key for both vision targets
+    private static final String ROOT = "Vision";
+
     static {
         // Loads our OpenCV library before anything else.
         System.loadLibrary("opencv_java310");
@@ -33,9 +36,6 @@ public class Main {
             e.printStackTrace();
         }
 
-        // The root key for both vision targets
-        String rootTable = "Vision";
-
         // Connect NetworkTables, and get access to the publishing table
         NetworkTable.setClientMode();
         // Set your team number here
@@ -45,8 +45,8 @@ public class Main {
 
         // The network tables to use for targeting
         NetworkTable
-            gearVisionTable = NetworkTable.getTable(rootTable + "/gearVision"),
-            highGoalTable = NetworkTable.getTable(rootTable + "/highGoal");
+            gearVisionTable = NetworkTable.getTable(ROOT + "/gearVision"),
+            highGoalTable = NetworkTable.getTable(ROOT + "/highGoal");
 
         // All the Mjpeg servers to check out before and after of each feed
         // They can be found at http://roborio-1089-FRC.local:<port>
@@ -62,7 +62,6 @@ public class Main {
             lifeCamSource = new CvSource("CvSource_LifeCam", VideoMode.PixelFormat.kMJPEG, RES_X, RES_Y, FPS);
 
         // Our usb cameras
-        // NOTE: will not always be right; check video settings on pi
         UsbCamera
             piCamera = new UsbCamera("Pi Camera", 1),
             lifeCam = new UsbCamera("LifeCam 3000", 0);
@@ -82,7 +81,7 @@ public class Main {
             highGoalPipeline = new MercPipeline(NetworkTable.getTable("Preferences").getNumberArray("hslThresholdLifeCam", DEF_THRESH), highGoalFCS);
 
         // Add listeners for values for camera settings and HSL settings
-        NetworkTable.getTable(rootTable + "/gearVision").addTableListener(
+        NetworkTable.getTable(ROOT + "/gearVision").addTableListener(
     			(ITable table, String key, Object value, boolean isNew) -> {
     			    if ("brightness".equals(key))
     			        piCamera.setBrightness((int)value);
@@ -91,7 +90,7 @@ public class Main {
                 }
 		);
 
-        NetworkTable.getTable(rootTable + "/highGoal").addTableListener(
+        NetworkTable.getTable(ROOT + "/highGoal").addTableListener(
                 (ITable table, String key, Object value, boolean isNew) -> {
                     if ("brightness".equals(key))
                         lifeCam.setBrightness((int)value);
@@ -172,10 +171,10 @@ public class Main {
         try {
             // Put wait methods into a loop to keep the threads from being interrupted
             // when we don't want them to be.
-            NetworkTable.getTable(rootTable).putBoolean("shutdown", false);
+            NetworkTable.getTable(ROOT).putBoolean("shutdown", false);
             while(!shutdown) {
                 Thread.sleep(1000);
-                shutdown = NetworkTable.getTable(rootTable).getBoolean("shutdown", false);
+                shutdown = NetworkTable.getTable(ROOT).getBoolean("shutdown", false);
             }
 
             // Shutdown the program when we're done

@@ -1,4 +1,9 @@
-// Do not mess with the following 6 lines
+// Plugins block
+// Feel free to add more, but the main ones that should stay are:
+// - java
+// - application
+// - org.hidetake.ssh
+// - com.github.johnrengelman.shadow
 plugins {
   id 'java'
   id 'application'
@@ -20,10 +25,8 @@ mainClassName = 'Main'
 // Change the line below to change the name of the output jar
 def projectName = 'CameraVision'
 
-// Shouldn't need to change anything below this point
-apply from: 'dependencies.gradle'
-
-// SSH build configuration
+// SSH Build Config
+// Pretty straight forward, change what's necessary.
 remotes {
   pi {
     host = '10.10.89.20'
@@ -32,6 +35,9 @@ remotes {
     password = 'raspberry'
   }
 }
+
+// Shouldn't need to change anything below this point
+apply from: 'dependencies.gradle'
 
 ssh.settings {
   knownHosts = allowAnyHosts
