@@ -53,7 +53,7 @@ public class VisionThread<P extends VisionPipeline> implements Runnable {
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
-                // If grabFrame returns 0, something has gone wrong.
+                // If grabFrame returns 0, frame time is 0 and something has gone wrong.
                 // Report the problem and continue.
                 if (SINK.grabFrame(img) == 0) {
                     System.out.println(SINK.getError());

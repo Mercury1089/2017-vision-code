@@ -1,3 +1,4 @@
+import com.mercury1089.main.Runner;
 import edu.wpi.cscore.CvSink;
 import edu.wpi.cscore.CvSource;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
@@ -161,16 +162,16 @@ public class VisionThread extends Thread {
                 // Draw a midpoint
                 Imgproc.line(
                         img,
-                        new Point(Main.RES_X / 2.0, 50),
-                        new Point(Main.RES_X / 2.0, Main.RES_Y - 50),
+                        new Point(Runner.RES_X / 2.0, 50),
+                        new Point(Runner.RES_X / 2.0, Runner.RES_Y - 50),
                         WHITE,
                         1
                 );
 
                 Imgproc.line(
                         img,
-                        new Point(50, Main.RES_Y / 2.0),
-                        new Point(Main.RES_X - 50, Main.RES_Y / 2.0),
+                        new Point(50, Runner.RES_Y / 2.0),
+                        new Point(Runner.RES_X - 50, Runner.RES_Y / 2.0),
                         WHITE,
                         1
                 );
