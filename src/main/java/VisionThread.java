@@ -27,7 +27,7 @@ public class VisionThread extends Thread {
      * @param outputFeed the output feed to output the processed frame
      * @param pipeline the pipeline to use to process the image
      * @param table the network table to output values to
-     * @param name the name of the thread to append to the prefix
+     * @param name the name of the vision to append to the prefix
      */
     public VisionThread(CvSink sink, CvSource outputFeed, MercPipeline pipeline, NetworkTable table, String name) {
         super (() -> {

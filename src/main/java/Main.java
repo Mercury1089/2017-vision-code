@@ -4,6 +4,9 @@ import edu.wpi.first.wpilibj.tables.ITable;
 
 import java.io.IOException;
 
+/**
+ * Main runner class.
+ */
 public class Main {
     private static final Runtime RUNTIME;
     public static final int
@@ -183,18 +186,4 @@ public class Main {
             e.printStackTrace();
         }
     }
-    
-/*
-    public static void updateVisionFromNT(MercPipeline pipeline, UsbCamera camera, String key, Object val) {
-    	switch(key) {
-            case "brightness":
-                camera.setBrightness((int)val);
-                break;
-            default:
-                pipeline.updateHSL(key, (Double)val);
-                break;
-    	}
-    }
-*/
-
 }
