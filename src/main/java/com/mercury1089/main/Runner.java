@@ -33,7 +33,7 @@ public abstract class Runner {
         // Connect NetworkTables, and get access to the publishing table
         NetworkTable.setClientMode();
         // Set your team number here
-        NetworkTable.setTeam(1089);
+        NetworkTable.setTeam(VisionConfig.team);
         // Initialize the network tables since we aren't doing this in a regular robot class
         NetworkTable.initialize();
 

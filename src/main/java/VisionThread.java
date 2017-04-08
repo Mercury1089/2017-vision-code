@@ -1,4 +1,5 @@
-import com.mercury1089.main.Runner;
+import com.mercury1089.main.VisionConfig;
+import com.mercury1089.vision.TargetingPipeline;
 import edu.wpi.cscore.CvSink;
 import edu.wpi.cscore.CvSource;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
@@ -20,7 +21,7 @@ public class VisionThread extends Thread {
 
     /**
      * Creates a new {@link Thread} named "VisionThread-name" with a {@link Runnable} fit for processing
-     * the input from the specified {@link CvSink} using the specified {@link MercPipeline}
+     * the input from the specified {@link CvSink} using the specified {@link TargetingPipeline}
      * and output a processed image with contours drawn on into the specified {@link CvSource}
      * as well as into the specified {@link NetworkTable}.
      *
@@ -30,7 +31,7 @@ public class VisionThread extends Thread {
      * @param table the network table to output values to
      * @param name the name of the vision to append to the prefix
      */
-    public VisionThread(CvSink sink, CvSource outputFeed, MercPipeline pipeline, NetworkTable table, String name) {
+    public VisionThread(CvSink sink, CvSource outputFeed, TargetingPipeline pipeline, NetworkTable table, String name) {
         super (() -> {
             // All Mats and Lists should be stored outside the loop to avoid allocations
             // as they are expensive to create
@@ -162,16 +163,16 @@ public class VisionThread extends Thread {
                 // Draw a midpoint
                 Imgproc.line(
                         img,
-                        new Point(Runner.RES_X / 2.0, 50),
-                        new Point(Runner.RES_X / 2.0, Runner.RES_Y - 50),
+                        new Point(VisionConfig.resX / 2.0, 50),
+                        new Point(VisionConfig.resX / 2.0, VisionConfig.resY - 50),
                         WHITE,
                         1
                 );
 
                 Imgproc.line(
                         img,
-                        new Point(50, Runner.RES_Y / 2.0),
-                        new Point(Runner.RES_X - 50, Runner.RES_Y / 2.0),
+                        new Point(50, VisionConfig.resY / 2.0),
+                        new Point(VisionConfig.resX - 50, VisionConfig.resY / 2.0),
                         WHITE,
                         1
                 );
